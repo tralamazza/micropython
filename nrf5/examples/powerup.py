@@ -24,6 +24,33 @@
 
 from machine import ADC
 from machine import Pin
+from ubluepy import Peripheral, Scanner, constants
+
+def bytes_to_str(bytes):
+    string = ""
+    for b in bytes:
+        string += chr(b)
+    return string
+
+def get_device_names(scan_entries):
+    dev_names = []
+    for e in scan_entries:
+        scan = e.getScanData()
+        if scan:
+            for s in scan:
+               if s[0] == constants.ad_types.AD_TYPE_COMPLETE_LOCAL_NAME:
+                   dev_names.append((e, bytes_to_str(s[2])))
+    return dev_names
+
+def find_device_by_name(name):
+    s = Scanner()
+    scan_res = s.scan(2000)
+
+    device_names = get_device_names(scan_res)
+    print(device_names)
+    for dev in device_names:
+        if name == dev[1]:
+            return dev[0]
 
 class PowerUp3:
     def __init__(self):
@@ -46,3 +73,9 @@ class PowerUp3:
         
     def __str__(self):
         return "calibration x: %i, y: %i" % (self.x_mid, self.y_mid)
+
+    def connect(self):
+        dev = find_device_by_name("TailorToys PowerUp")
+        print(dev)
+        self.p = Peripheral()
+        self.p.connect(dev.addr())
