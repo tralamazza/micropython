@@ -67,23 +67,23 @@ if (ble_drv_stack_enabled() == 0) { \
 
 static volatile bool m_adv_in_progress;
 static volatile bool m_tx_in_progress;
-static volatile bool m_primary_service_found;
 
 static ble_drv_gap_evt_callback_t          gap_event_handler;
 static ble_drv_gatts_evt_callback_t        gatts_event_handler;
-
-#if (BLUETOOTH_SD == 130) || (BLUETOOTH_SD == 132)
-static ble_drv_adv_evt_callback_t          adv_event_handler;
-static ble_drv_gattc_evt_callback_t        gattc_event_handler;
-static ble_drv_disc_add_service_callback_t disc_add_service_handler;
-static ble_drv_disc_add_char_callback_t    disc_add_char_handler;
-static ble_drv_gattc_char_data_callback_t  gattc_char_data_handle;
-#endif
 
 static mp_obj_t mp_gap_observer;
 static mp_obj_t mp_gatts_observer;
 
 #if (BLUETOOTH_SD == 130) || (BLUETOOTH_SD == 132)
+static volatile bool m_primary_service_found;
+static volatile bool m_characteristic_found;
+
+static ble_drv_adv_evt_callback_t          adv_event_handler;
+static ble_drv_gattc_evt_callback_t        gattc_event_handler;
+static ble_drv_disc_add_service_callback_t disc_add_service_handler;
+static ble_drv_disc_add_char_callback_t    disc_add_char_handler;
+static ble_drv_gattc_char_data_callback_t  gattc_char_data_handle;
+
 static mp_obj_t mp_adv_observer;
 static mp_obj_t mp_gattc_observer;
 static mp_obj_t mp_gattc_disc_service_observer;
@@ -604,7 +604,7 @@ void ble_drv_attr_s_read(uint16_t conn_handle, uint16_t handle, uint16_t len, ui
 
 }
 
-void ble_drv_attr_write(uint16_t conn_handle, uint16_t handle, uint16_t len, uint8_t * p_data) {
+void ble_drv_attr_s_write(uint16_t conn_handle, uint16_t handle, uint16_t len, uint8_t * p_data) {
     ble_gatts_value_t gatts_value;
     memset(&gatts_value, 0, sizeof(gatts_value));
 
@@ -620,7 +620,7 @@ void ble_drv_attr_write(uint16_t conn_handle, uint16_t handle, uint16_t len, uin
     }
 }
 
-void ble_drv_attr_notify(uint16_t conn_handle, uint16_t handle, uint16_t len, uint8_t * p_data) {
+void ble_drv_attr_s_notify(uint16_t conn_handle, uint16_t handle, uint16_t len, uint8_t * p_data) {
     uint16_t               hvx_len = len;
     ble_gatts_hvx_params_t hvx_params;
 
@@ -683,6 +683,25 @@ void ble_drv_attr_c_read(uint16_t conn_handle, uint16_t handle, mp_obj_t obj, bl
     while (gattc_char_data_handle != NULL) {
         ;
     }
+}
+
+void ble_drv_attr_c_write(uint16_t conn_handle, uint16_t handle, uint16_t len, uint8_t * p_data) {
+
+	ble_gattc_write_params_t write_params;
+
+	write_params.write_op = BLE_GATT_OP_WRITE_CMD;
+	write_params.flags    = BLE_GATT_EXEC_WRITE_FLAG_PREPARED_CANCEL;
+	write_params.handle   = handle;
+	write_params.offset   = 0;
+	write_params.len      = len;
+	write_params.p_value  = p_data;
+
+	uint32_t err_code = sd_ble_gattc_write(conn_handle, &write_params);
+
+	if (err_code != 0) {
+        nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_OSError,
+            "Can not write attribute value. status: 0x" HEX2_FMT, (uint16_t)err_code));
+	}
 }
 
 void ble_drv_scan_start(void) {
@@ -800,6 +819,8 @@ bool ble_drv_discover_characteristic(mp_obj_t obj,
     handle_range.start_handle = start_handle;
     handle_range.end_handle   = end_handle;
 
+    m_characteristic_found = false;
+
     uint32_t err_code;
     err_code = sd_ble_gattc_characteristics_discover(conn_handle, &handle_range);
     if (err_code != 0) {
@@ -811,7 +832,11 @@ bool ble_drv_discover_characteristic(mp_obj_t obj,
         ;
     }
 
-    return true;
+    if (m_characteristic_found) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 void ble_drv_discover_descriptors(void) {
@@ -915,6 +940,7 @@ static void ble_evt_handler(ble_evt_t * p_ble_evt) {
         case BLE_GATTC_EVT_PRIM_SRVC_DISC_RSP:
             BLE_DRIVER_LOG("BLE EVT PRIMARY SERVICE DISCOVERY RESPONSE\n");
             BLE_DRIVER_LOG(">>> service count: %d\n", p_ble_evt->evt.gattc_evt.params.prim_srvc_disc_rsp.count);
+
             for (uint16_t i = 0; i < p_ble_evt->evt.gattc_evt.params.prim_srvc_disc_rsp.count; i++) {
                 ble_gattc_service_t * p_service = &p_ble_evt->evt.gattc_evt.params.prim_srvc_disc_rsp.services[i];
 
@@ -938,6 +964,7 @@ static void ble_evt_handler(ble_evt_t * p_ble_evt) {
 
         case BLE_GATTC_EVT_CHAR_DISC_RSP:
             BLE_DRIVER_LOG("BLE EVT CHAR DISCOVERY RESPONSE\n");
+            BLE_DRIVER_LOG(">>> characteristic count: %d\n", p_ble_evt->evt.gattc_evt.params.char_disc_rsp.count);
 
             for (uint16_t i = 0; i < p_ble_evt->evt.gattc_evt.params.char_disc_rsp.count; i++) {
                 ble_gattc_char_t * p_char = &p_ble_evt->evt.gattc_evt.params.char_disc_rsp.chars[i];
@@ -959,6 +986,10 @@ static void ble_evt_handler(ble_evt_t * p_ble_evt) {
             #endif
 
                 disc_add_char_handler(mp_gattc_disc_char_observer, &char_data);
+            }
+
+            if (p_ble_evt->evt.gattc_evt.params.char_disc_rsp.count > 0) {
+                m_characteristic_found = true;
             }
 
             // mark end of characteristic discovery

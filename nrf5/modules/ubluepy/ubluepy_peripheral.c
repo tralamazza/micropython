@@ -178,6 +178,8 @@ STATIC mp_obj_t peripheral_advertise(mp_uint_t n_args, const mp_obj_t *pos_args,
 
     ubluepy_peripheral_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
 
+    self->role = UBLUEPY_ROLE_PERIPHERAL;
+
     // parse args
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
@@ -345,6 +347,8 @@ STATIC mp_obj_t peripheral_connect(mp_uint_t n_args, const mp_obj_t *pos_args, m
     ubluepy_peripheral_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     mp_obj_t dev_addr              = pos_args[1];
 
+    self->role = UBLUEPY_ROLE_CENTRAL;
+
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_addr_type, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = UBLUEPY_ADDR_TYPE_PUBLIC } },
     };
@@ -402,7 +406,7 @@ STATIC mp_obj_t peripheral_connect(mp_uint_t n_args, const mp_obj_t *pos_args, m
 
         service_disc_retval = ble_drv_discover_services(self,
                                                         self->conn_handle,
-                                                        p_service->end_handle,
+                                                        p_service->end_handle + 1,
                                                         disc_add_service);
     }
 
@@ -413,15 +417,28 @@ STATIC mp_obj_t peripheral_connect(mp_uint_t n_args, const mp_obj_t *pos_args, m
 
     for (uint16_t s = 0; s < num_services; s++) {
         ubluepy_service_obj_t * p_service = (ubluepy_service_obj_t *)services[s];
+        bool char_disc_retval = ble_drv_discover_characteristic(p_service,
+                                                                self->conn_handle,
+                                                                p_service->start_handle,
+                                                                p_service->end_handle,
+                                                                disc_add_char);
+        // continue discovery of characteristics ...
+        while (char_disc_retval) {
+            mp_obj_t * characteristics = NULL;
+            mp_uint_t  num_chars;
+            mp_obj_get_array(p_service->char_list, &num_chars, &characteristics);
 
-        bool retval = ble_drv_discover_characteristic(p_service,
-                                                      self->conn_handle,
-                                                      p_service->start_handle,
-                                                      p_service->end_handle,
-                                                      disc_add_char);
-        if (retval != true) {
-            nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_OSError,
-                      "Error during characteristic discovery"));
+            ubluepy_characteristic_obj_t * p_char = (ubluepy_characteristic_obj_t *)characteristics[num_chars - 1];
+            uint16_t next_handle = p_char->handle + 1;
+            if ((next_handle) < p_service->end_handle) {
+                char_disc_retval = ble_drv_discover_characteristic(p_service,
+                                                                   self->conn_handle,
+                                                                   next_handle,
+                                                                   p_service->end_handle,
+                                                                   disc_add_char);
+            } else {
+                break;
+            }
         }
     }
 
