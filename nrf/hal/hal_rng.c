@@ -30,6 +30,22 @@
 #ifdef HAL_RNG_MODULE_ENABLED
 
 uint8_t hal_rng_generate(uint16_t num_of_loops) {
+
+    NRF_RNG->EVENTS_VALRDY = 0;
+    NRF_RNG->TASKS_START   = 1;
+    
+    for (uint16_t i = 0; i < num_of_loops; i++) {
+
+        while (NRF_RNG->EVENTS_VALRDY == 0) {
+            ;
+        }
+
+        NRF_RNG->EVENTS_VALRDY = 0;
+    }
+
+    NRF_RNG->TASKS_STOP = 1;
+
+    return NRF_RNG->VALUE;
 }
 
 #endif // HAL_RNG_MODULE_ENABLED
