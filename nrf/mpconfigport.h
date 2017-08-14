@@ -156,6 +156,10 @@
 #define MICROPY_PY_MACHINE_RTC      (0)
 #endif
 
+#ifndef MICROPY_PY_HW_RNG
+#define MICROPY_PY_HW_RNG           (0)
+#endif
+
 #define MICROPY_ENABLE_EMERGENCY_EXCEPTION_BUF   (1)
 #define MICROPY_EMERGENCY_EXCEPTION_BUF_SIZE  (0)
 
