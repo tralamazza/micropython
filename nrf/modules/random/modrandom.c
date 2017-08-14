@@ -25,21 +25,37 @@
  * THE SOFTWARE.
  */
 
-#define rand30() (MicroBit_random(0x40000000))
-#define randbelow(n) (MicroBit_random(n))
-
-extern "C" {
-
 #include <assert.h>
-#include <string.h>
 #include <string.h>
 
 #include "py/runtime.h"
+#include "hal_rng.h"
 
-extern int MicroBit_random(int max);
-extern void MicroBit_seedRandom(void);
-extern void MicroBit_setSeed(uint32_t seed);
+#if MICROPY_PY_HW_RNG
 
+#define seed_random() rand30()
+#define set_seed(x) (m_seeded_value = x)
+
+static uint32_t m_seeded_value = 0;
+
+static inline int rand30() {
+    uint32_t  val;
+    uint8_t * p_val = (void *)&val;
+    for (uint8_t i = 0; i < 4; i++) {
+        p_val[i] = hal_rng_generate(1);
+    }
+
+    uint32_t retval = val & 0x3fffffff; // binary mask b00111111111111111111111111111111
+
+    // update seeded value
+    m_seeded_value <<= 8 | (retval & 0xFF);
+
+    return retval;
+}
+
+static inline int randbelow(int n) {
+    return rand30() % n;
+}
 
 STATIC mp_obj_t mod_random_getrandbits(mp_obj_t num_in) {
     int n = mp_obj_get_int(num_in);
@@ -55,10 +71,10 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_random_getrandbits_obj, mod_random_getrandb
 
 STATIC mp_obj_t mod_random_seed(size_t n_args, const mp_obj_t *args) {
     if (n_args == 0 || args[0] == mp_const_none) {
-        MicroBit_seedRandom();
+        seed_random();
     } else {
         mp_uint_t seed = mp_obj_get_int_truncated(args[0]);
-        MicroBit_setSeed(seed);
+        set_seed(seed);
     }
     return mp_const_none;
 }
@@ -172,16 +188,17 @@ STATIC const mp_rom_map_elem_t mp_module_random_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_randrange), MP_ROM_PTR(&mod_random_randrange_obj) },
     { MP_ROM_QSTR(MP_QSTR_randint), MP_ROM_PTR(&mod_random_randint_obj) },
     { MP_ROM_QSTR(MP_QSTR_choice), MP_ROM_PTR(&mod_random_choice_obj) },
+#if MICROPY_PY_BUILTINS_FLOAT
     { MP_ROM_QSTR(MP_QSTR_random), MP_ROM_PTR(&mod_random_random_obj) },
     { MP_ROM_QSTR(MP_QSTR_uniform), MP_ROM_PTR(&mod_random_uniform_obj) },
+#endif
 };
 
 STATIC MP_DEFINE_CONST_DICT(mp_module_random_globals, mp_module_random_globals_table);
 
 const mp_obj_module_t random_module = {
     .base = { &mp_type_module },
-    .name = MP_QSTR_random,
     .globals = (mp_obj_dict_t*)&mp_module_random_globals,
 };
 
-}
+#endif // MICROPY_PY_HW_RNG
