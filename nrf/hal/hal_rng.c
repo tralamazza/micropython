@@ -51,25 +51,26 @@ uint32_t hal_rng_generate(void) {
         } while (status != 0);
 
 	return retval;
-    }
-
+    } else {
 #else
+        uint8_t * p_retval = (uint8_t *)&retval;
 
-    uint8_t * p_retval = (uint8_t *)&retval;
-
-    NRF_RNG->EVENTS_VALRDY = 0;
-    NRF_RNG->TASKS_START   = 1;
-
-    for (uint16_t i = 0; i < 4; i++) {
-        while (NRF_RNG->EVENTS_VALRDY == 0) {
-            ;
-        }
         NRF_RNG->EVENTS_VALRDY = 0;
-	p_retval[i] = NRF_RNG->VALUE;
+        NRF_RNG->TASKS_START   = 1;
+
+        for (uint16_t i = 0; i < 4; i++) {
+            while (NRF_RNG->EVENTS_VALRDY == 0) {
+                ;
+            }
+            NRF_RNG->EVENTS_VALRDY = 0;
+            p_retval[i] = NRF_RNG->VALUE;
+        }
+
+        NRF_RNG->TASKS_STOP = 1;
+#endif
+
+#if BLUETOOTH_SD
     }
-
-    NRF_RNG->TASKS_STOP = 1;
-
 #endif
 
     return retval;
