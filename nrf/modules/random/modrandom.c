@@ -39,11 +39,7 @@
 static uint32_t m_seeded_value = 0;
 
 static inline int rand30() {
-    uint32_t  val;
-    uint8_t * p_val = (void *)&val;
-    for (uint8_t i = 0; i < 4; i++) {
-        p_val[i] = hal_rng_generate(1);
-    }
+    uint32_t val = hal_rng_generate();
 
     uint32_t retval = val & 0x3fffffff; // binary mask b00111111111111111111111111111111
 
