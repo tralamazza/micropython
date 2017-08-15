@@ -34,19 +34,13 @@
 #if MICROPY_PY_HW_RNG
 
 #define seed_random() rand30()
-#define set_seed(x) (m_seeded_value = x)
-
-static uint32_t m_seeded_value = 0;
+#define set_seed(x)
 
 static inline int rand30() {
+
     uint32_t val = hal_rng_generate();
+    return (val & 0x3fffffff); // binary mask b00111111111111111111111111111111
 
-    uint32_t retval = val & 0x3fffffff; // binary mask b00111111111111111111111111111111
-
-    // update seeded value
-    m_seeded_value <<= 8 | (retval & 0xFF);
-
-    return retval;
 }
 
 static inline int randbelow(int n) {
