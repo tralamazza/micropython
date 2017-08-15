@@ -29,6 +29,6 @@
 
 #include "nrf.h"
 
-uint8_t hal_rng_generate(uint16_t num_of_loops);
+uint32_t hal_rng_generate(uint16_t num_of_loops);
 
 #endif // HAL_RNG_H__

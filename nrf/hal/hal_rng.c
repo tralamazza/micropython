@@ -38,36 +38,41 @@
 
 #endif // BLUETOOTH_SD
 
-uint8_t hal_rng_generate(uint16_t num_of_loops) {
+uint32_t hal_rng_generate(uint16_t num_of_loops) {
+
+    uint32_t retval = 0;
+
 #if BLUETOOTH_SD
+
     if (BLUETOOTH_STACK_ENABLED() == 1) {
-
-        uint8_t  val;
-        uint32_t retval;
+        uint32_t status;
         do {
-            retval = sd_rand_application_vector_get(&val, 1); // Extract one byte
-        } while (retval != 0);
+            status = sd_rand_application_vector_get(&retval, 4); // Extract 4 bytes
+        } while (status != 0);
 
-	return val;
+	return retval;
     }
-    return 0;
+
 #else
+
+    uint8_t * p_retval = (uint8_t *)&retval;
+
     NRF_RNG->EVENTS_VALRDY = 0;
     NRF_RNG->TASKS_START   = 1;
 
-    for (uint16_t i = 0; i < num_of_loops; i++) {
-
+    for (uint16_t i = 0; i < 4; i++) {
         while (NRF_RNG->EVENTS_VALRDY == 0) {
             ;
         }
-
         NRF_RNG->EVENTS_VALRDY = 0;
+	p_retval[i] = NRF_RNG->VALUE;
     }
 
     NRF_RNG->TASKS_STOP = 1;
 
-    return NRF_RNG->VALUE;
 #endif
+
+    return retval;
 }
 
 #endif // HAL_RNG_MODULE_ENABLED
