@@ -47,7 +47,7 @@ uint32_t hal_rng_generate(void) {
     if (BLUETOOTH_STACK_ENABLED() == 1) {
         uint32_t status;
         do {
-            status = sd_rand_application_vector_get(&retval, 4); // Extract 4 bytes
+            status = sd_rand_application_vector_get((uint8_t *)&retval, 4); // Extract 4 bytes
         } while (status != 0);
 
 	return retval;
