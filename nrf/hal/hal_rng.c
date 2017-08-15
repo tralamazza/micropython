@@ -29,8 +29,29 @@
 
 #ifdef HAL_RNG_MODULE_ENABLED
 
-uint8_t hal_rng_generate(uint16_t num_of_loops) {
+#if BLUETOOTH_SD
+#include "py/nlr.h"
+#include "ble_drv.h"
+#include "nrf_soc.h"
 
+#define BLUETOOTH_STACK_ENABLED() (ble_drv_stack_enabled())
+
+#endif // BLUETOOTH_SD
+
+uint8_t hal_rng_generate(uint16_t num_of_loops) {
+#if BLUETOOTH_SD
+    if (BLUETOOTH_STACK_ENABLED() == 1) {
+
+        uint8_t  val;
+        uint32_t retval;
+        do {
+            retval = sd_rand_application_vector_get(&val, 1); // Extract one byte
+        } while (retval != 0);
+
+	return val;
+    }
+    return 0;
+#else
     NRF_RNG->EVENTS_VALRDY = 0;
     NRF_RNG->TASKS_START   = 1;
 
@@ -46,6 +67,7 @@ uint8_t hal_rng_generate(uint16_t num_of_loops) {
     NRF_RNG->TASKS_STOP = 1;
 
     return NRF_RNG->VALUE;
+#endif
 }
 
 #endif // HAL_RNG_MODULE_ENABLED
