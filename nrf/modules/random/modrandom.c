@@ -33,9 +33,6 @@
 
 #if MICROPY_PY_HW_RNG
 
-#define seed_random() rand30()
-#define set_seed(x)
-
 static inline int rand30() {
 
     uint32_t val = hal_rng_generate();
@@ -58,17 +55,6 @@ STATIC mp_obj_t mod_random_getrandbits(mp_obj_t num_in) {
     return mp_obj_new_int_from_uint(rand30() & mask);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_random_getrandbits_obj, mod_random_getrandbits);
-
-STATIC mp_obj_t mod_random_seed(size_t n_args, const mp_obj_t *args) {
-    if (n_args == 0 || args[0] == mp_const_none) {
-        seed_random();
-    } else {
-        mp_uint_t seed = mp_obj_get_int_truncated(args[0]);
-        set_seed(seed);
-    }
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_random_seed_obj, 0, 1, mod_random_seed);
 
 STATIC mp_obj_t mod_random_randrange(size_t n_args, const mp_obj_t *args) {
     mp_int_t start = mp_obj_get_int(args[0]);
@@ -174,7 +160,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(mod_random_uniform_obj, mod_random_uniform);
 STATIC const mp_rom_map_elem_t mp_module_random_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_random) },
     { MP_ROM_QSTR(MP_QSTR_getrandbits), MP_ROM_PTR(&mod_random_getrandbits_obj) },
-    { MP_ROM_QSTR(MP_QSTR_seed), MP_ROM_PTR(&mod_random_seed_obj) },
     { MP_ROM_QSTR(MP_QSTR_randrange), MP_ROM_PTR(&mod_random_randrange_obj) },
     { MP_ROM_QSTR(MP_QSTR_randint), MP_ROM_PTR(&mod_random_randint_obj) },
     { MP_ROM_QSTR(MP_QSTR_choice), MP_ROM_PTR(&mod_random_choice_obj) },
