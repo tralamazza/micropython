@@ -34,10 +34,8 @@
 #if MICROPY_PY_HW_RNG
 
 static inline int rand30() {
-
     uint32_t val = hal_rng_generate();
     return (val & 0x3fffffff); // binary mask b00111111111111111111111111111111
-
 }
 
 static inline int randbelow(int n) {
