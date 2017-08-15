@@ -49,10 +49,8 @@ uint32_t hal_rng_generate(void) {
         do {
             status = sd_rand_application_vector_get((uint8_t *)&retval, 4); // Extract 4 bytes
         } while (status != 0);
-
-	return retval;
     } else {
-#else
+#endif
         uint8_t * p_retval = (uint8_t *)&retval;
 
         NRF_RNG->EVENTS_VALRDY = 0;
@@ -67,8 +65,6 @@ uint32_t hal_rng_generate(void) {
         }
 
         NRF_RNG->TASKS_STOP = 1;
-#endif
-
 #if BLUETOOTH_SD
     }
 #endif
