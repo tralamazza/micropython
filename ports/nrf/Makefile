@@ -8,6 +8,7 @@ endif
 # If SoftDevice is selected, try to use that one.
 SD ?=
 SD_LOWER = $(shell echo $(SD) | tr '[:upper:]' '[:lower:]')
+DISABLE_FLOATING_POINT ?= 'no'
 
 # TODO: Verify that it is a valid target.
 
@@ -96,6 +97,7 @@ endif
 LIBS = \
 
 ifeq ($(MCU_VARIANT), nrf52)
+ifeq ($(DISABLE_FLOATING_POINT), 'no')
 LIBM_FILE_NAME   = $(shell $(CC) $(CFLAGS) -print-file-name=libm.a)
 LIBC_FILE_NAME   = $(shell $(CC) $(CFLAGS) -print-file-name=libc.a)
 LIBGCC_FILE_NAME = $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
@@ -103,6 +105,9 @@ LIBGCC_FILE_NAME = $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
 LIBS += -L $(dir $(LIBM_FILE_NAME)) -lm
 LIBS += -L $(dir $(LIBC_FILE_NAME)) -lc
 LIBS += -L $(dir $(LIBGCC_FILE_NAME)) -lgcc
+else
+NRF_DEFINES += -DMICROPY_DISABLE_FLOAT
+endif
 endif
 
 SRC_LIB = $(addprefix lib/,\
