@@ -5,6 +5,8 @@ SOFTDEV_VERSION = 2.0.1
 
 LD_FILE = boards/feather52/custom_nrf52832_dfu_app.ld
 
+DISABLE_FLOATING_POINT = 'yes'
+
 NRF_DEFINES += -DNRF52832_XXAA
 
 

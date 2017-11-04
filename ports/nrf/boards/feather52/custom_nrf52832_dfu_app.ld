@@ -6,8 +6,8 @@
 MEMORY
 {
     FLASH (rx)      : ORIGIN = 0x00000000, LENGTH = 0x080000 /* entire flash, 512 KiB */
-    FLASH_ISR (rx)  : ORIGIN = 0x0001c000, LENGTH = 0x001000 /* sector 0, 4 KiB */
-    FLASH_TEXT (rx) : ORIGIN = 0x0001c400, LENGTH = 0x026c00 /* 152 KiB - APP - ISR */
+    FLASH_ISR (rx)  : ORIGIN = 0x0001c000, LENGTH = 0x000400 /* sector 0, 1 KiB */
+    FLASH_TEXT (rx) : ORIGIN = 0x0001c400, LENGTH = 0x028400 /* 161 KiB, the rest is DFU spare and App data */
     RAM (xrw)       : ORIGIN = 0x200039c0, LENGTH = 0x0c640  /* 49.5 KiB, give 8KiB headroom for softdevice */
 }
  
