@@ -152,7 +152,7 @@ STATIC const mp_rom_map_elem_t os_module_globals_table[] = {
 
 #elif MICROPY_HW_HAS_BUILTIN_FLASH
     { MP_ROM_QSTR(MP_QSTR_listdir), MP_ROM_PTR(&uos_mbfs_listdir_obj) },
-    { MP_ROM_QSTR(MP_QSTR_ilistdir), MP_ROM_PTR(&uos_mbfs_ilistdir_obj) }, // uses ~236 bytes
+    { MP_ROM_QSTR(MP_QSTR_ilistdir), MP_ROM_PTR(&uos_mbfs_ilistdir_obj) }, // uses ~136 bytes
     { MP_ROM_QSTR(MP_QSTR_stat), MP_ROM_PTR(&uos_mbfs_stat_obj) },
     { MP_ROM_QSTR(MP_QSTR_remove), MP_ROM_PTR(&uos_mbfs_remove_obj) },
 #endif

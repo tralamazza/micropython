@@ -45,7 +45,7 @@ mp_lexer_t *uos_mbfs_new_reader(const char *filename);
 mp_import_stat_t uos_mbfs_import_stat(const char *path);
 
 MP_DECLARE_CONST_FUN_OBJ_0(uos_mbfs_listdir_obj);
-MP_DECLARE_CONST_FUN_OBJ_VAR_BETWEEN(uos_mbfs_ilistdir_obj);
+MP_DECLARE_CONST_FUN_OBJ_0(uos_mbfs_ilistdir_obj);
 MP_DECLARE_CONST_FUN_OBJ_1(uos_mbfs_remove_obj);
 MP_DECLARE_CONST_FUN_OBJ_1(uos_mbfs_stat_obj);
 

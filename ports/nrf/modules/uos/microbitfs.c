@@ -572,7 +572,6 @@ MP_DEFINE_CONST_FUN_OBJ_1(uos_mbfs_remove_obj, uos_mbfs_remove);
 typedef struct {
     mp_obj_base_t base;
     mp_fun_1_t iternext;
-    bool is_str;
     uint8_t index;
 } uos_mbfs_ilistdir_it_t;
 
@@ -585,13 +584,8 @@ STATIC mp_obj_t uos_mbfs_ilistdir_it_iternext(mp_obj_t self_in) {
             continue;
         }
 
-        // Get the file name as str/bytes object.
-        mp_obj_t name;
-        if (self->is_str) {
-            name = mp_obj_new_str(&file_system_chunks[self->index].header.filename[0], file_system_chunks[self->index].header.name_len, false);
-        } else {
-            name = mp_obj_new_bytes((const byte*)&file_system_chunks[self->index].header.filename[0], file_system_chunks[self->index].header.name_len);
-        }
+        // Get the file name as str object.
+        mp_obj_t name = mp_obj_new_str(&file_system_chunks[self->index].header.filename[0], file_system_chunks[self->index].header.name_len, false);
 
         // make 3-tuple with info about this entry
         mp_obj_tuple_t *t = MP_OBJ_TO_PTR(mp_obj_new_tuple(3, NULL));
@@ -606,30 +600,15 @@ STATIC mp_obj_t uos_mbfs_ilistdir_it_iternext(mp_obj_t self_in) {
     return MP_OBJ_STOP_ITERATION;
 }
 
-STATIC mp_obj_t uos_mbfs_ilistdir(size_t n_args, const mp_obj_t *args) {
+STATIC mp_obj_t uos_mbfs_ilistdir() {
     uos_mbfs_ilistdir_it_t *iter = m_new_obj(uos_mbfs_ilistdir_it_t);
     iter->base.type = &mp_type_polymorph_iter;
     iter->iternext = uos_mbfs_ilistdir_it_iternext;
-    iter->is_str = true;
     iter->index = 1;
-
-    if (n_args == 1) {
-        if (mp_obj_get_type(args[0]) == &mp_type_bytes) {
-            iter->is_str = false;
-        }
-
-        // Check for allowed paths
-        size_t pathlen;
-        const char *path = mp_obj_str_get_data(args[0], &pathlen);
-        if (pathlen > 1 || (pathlen && path[0] != '/')) {
-            // No directories allowed.
-            mp_raise_OSError(MP_ENOENT);
-        }
-    }
 
     return MP_OBJ_FROM_PTR(iter);
 }
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(uos_mbfs_ilistdir_obj, 0, 1, uos_mbfs_ilistdir);
+MP_DEFINE_CONST_FUN_OBJ_0(uos_mbfs_ilistdir_obj, uos_mbfs_ilistdir);
 
 MP_DEFINE_CONST_FUN_OBJ_0(uos_mbfs_listdir_obj, microbit_file_list);
 
