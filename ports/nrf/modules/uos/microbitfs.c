@@ -555,24 +555,25 @@ STATIC mp_obj_t uos_mbfs_file_close(mp_obj_t self) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(uos_mbfs_file_close_obj, uos_mbfs_file_close);
 
-STATIC mp_obj_t uos_mbfs_mount(mp_obj_t self_in, mp_obj_t readonly, mp_obj_t mkfs) {
-    // This function is called only once (indirectly from main()) and is
-    // not exposed to Python code. So we can ignore the readonly flag and
-    // not care about mounting a second time.
-    microbit_filesystem_init();
-    return mp_const_none;
+#if MICROPY_VFS
+STATIC mp_obj_t uos_mbfs_remove(mp_obj_t self, mp_obj_t name) {
+    return microbit_remove(name);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(uos_mbfs_mount_obj, uos_mbfs_mount);
-
+MP_DEFINE_CONST_FUN_OBJ_2(uos_mbfs_remove_obj, uos_mbfs_remove);
+#else
 STATIC mp_obj_t uos_mbfs_remove(mp_obj_t name) {
     return microbit_remove(name);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(uos_mbfs_remove_obj, uos_mbfs_remove);
+#endif
 
 typedef struct {
     mp_obj_base_t base;
     mp_fun_1_t iternext;
     uint8_t index;
+#if MICROPY_VFS
+    bool is_str;
+#endif
 } uos_mbfs_ilistdir_it_t;
 
 STATIC mp_obj_t uos_mbfs_ilistdir_it_iternext(mp_obj_t self_in) {
@@ -584,8 +585,17 @@ STATIC mp_obj_t uos_mbfs_ilistdir_it_iternext(mp_obj_t self_in) {
             continue;
         }
 
+#if MICROPY_VFS
+        mp_obj_t name;
+        if (!self->is_str) {
+            name = mp_obj_new_bytes((const byte*)&file_system_chunks[self->index].header.filename[0], file_system_chunks[self->index].header.name_len);
+        } else {
+            name = mp_obj_new_str(&file_system_chunks[self->index].header.filename[0], file_system_chunks[self->index].header.name_len, false);
+        }
+#else
         // Get the file name as str object.
         mp_obj_t name = mp_obj_new_str(&file_system_chunks[self->index].header.filename[0], file_system_chunks[self->index].header.name_len, false);
+#endif
 
         // make 3-tuple with info about this entry
         mp_obj_tuple_t *t = MP_OBJ_TO_PTR(mp_obj_new_tuple(3, NULL));
@@ -600,15 +610,35 @@ STATIC mp_obj_t uos_mbfs_ilistdir_it_iternext(mp_obj_t self_in) {
     return MP_OBJ_STOP_ITERATION;
 }
 
+#if MICROPY_VFS
+STATIC mp_obj_t uos_mbfs_ilistdir(mp_obj_t self, mp_obj_t path_in) {
+    // Check for allowed paths
+    size_t pathlen;
+    const char *path = mp_obj_str_get_data(path_in, &pathlen);
+    if (pathlen > 1 || (pathlen && path[0] != '/')) {
+        // No directories allowed.
+        mp_raise_OSError(MP_ENOENT);
+    }
+
+    bool is_str = mp_obj_get_type(path_in) != &mp_type_bytes;
+#else
 STATIC mp_obj_t uos_mbfs_ilistdir() {
+#endif
     uos_mbfs_ilistdir_it_t *iter = m_new_obj(uos_mbfs_ilistdir_it_t);
     iter->base.type = &mp_type_polymorph_iter;
     iter->iternext = uos_mbfs_ilistdir_it_iternext;
     iter->index = 1;
+    #if MICROPY_VFS
+    iter->is_str = is_str;
+    #endif
 
     return MP_OBJ_FROM_PTR(iter);
 }
+#if MICROPY_VFS
+MP_DEFINE_CONST_FUN_OBJ_2(uos_mbfs_ilistdir_obj, uos_mbfs_ilistdir);
+#else
 MP_DEFINE_CONST_FUN_OBJ_0(uos_mbfs_ilistdir_obj, uos_mbfs_ilistdir);
+#endif
 
 MP_DEFINE_CONST_FUN_OBJ_0(uos_mbfs_listdir_obj, microbit_file_list);
 
@@ -663,9 +693,9 @@ mp_obj_t uos_mbfs_open(size_t n_args, const mp_obj_t *args) {
     /// -1 means default; 0 explicitly false; 1 explicitly true.
     int read = -1;
     int text = -1;
-    if (n_args == 2) {
+    if (n_args == MICROPY_VFS + 2) {
         mp_uint_t len;
-        const char *mode = mp_obj_str_get_data(args[1], &len);
+        const char *mode = mp_obj_str_get_data(args[MICROPY_VFS + 1], &len);
         for (mp_uint_t i = 0; i < len; i++) {
             if (mode[i] == 'r' || mode[i] == 'w') {
                 if (read >= 0) {
@@ -683,7 +713,7 @@ mp_obj_t uos_mbfs_open(size_t n_args, const mp_obj_t *args) {
         }
     }
     mp_uint_t name_len;
-    const char *filename = mp_obj_str_get_data(args[0], &name_len);
+    const char *filename = mp_obj_str_get_data(args[MICROPY_VFS + 0], &name_len);
     file_descriptor_obj *res = microbit_file_open(filename, name_len, read == 0, text == 0);
     if (res == NULL) {
         mp_raise_OSError(MP_ENOENT);
@@ -692,8 +722,15 @@ mp_obj_t uos_mbfs_open(size_t n_args, const mp_obj_t *args) {
 mode_error:
     nlr_raise(mp_obj_new_exception_msg(&mp_type_ValueError, "illegal mode"));
 }
+#if MICROPY_VFS
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(uos_mbfs_open_obj, 2, 3, uos_mbfs_open);
+#endif
 
+#if MICROPY_VFS
+STATIC mp_obj_t uos_mbfs_stat(mp_obj_t self, mp_obj_t filename) {
+#else
 STATIC mp_obj_t uos_mbfs_stat(mp_obj_t filename) {
+#endif
     mp_obj_t file_size = microbit_file_size(filename);
 
     mp_obj_tuple_t *t = MP_OBJ_TO_PTR(mp_obj_new_tuple(10, NULL));
@@ -709,6 +746,32 @@ STATIC mp_obj_t uos_mbfs_stat(mp_obj_t filename) {
     t->items[9] = MP_OBJ_NEW_SMALL_INT(0); // st_ctime
     return MP_OBJ_FROM_PTR(t);
 }
+#if MICROPY_VFS
+MP_DEFINE_CONST_FUN_OBJ_2(uos_mbfs_stat_obj, uos_mbfs_stat);
+#else
 MP_DEFINE_CONST_FUN_OBJ_1(uos_mbfs_stat_obj, uos_mbfs_stat);
+#endif
+
+#if MICROPY_VFS
+
+STATIC const mp_rom_map_elem_t uos_mbfs_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_ilistdir), MP_ROM_PTR(&uos_mbfs_ilistdir_obj) },
+    { MP_ROM_QSTR(MP_QSTR_open), MP_ROM_PTR(&uos_mbfs_open_obj) },
+    { MP_ROM_QSTR(MP_QSTR_remove), MP_ROM_PTR(&uos_mbfs_remove_obj) },
+    { MP_ROM_QSTR(MP_QSTR_stat), MP_ROM_PTR(&uos_mbfs_stat_obj) },
+};
+STATIC MP_DEFINE_CONST_DICT(uos_mbfs_locals_dict, uos_mbfs_locals_dict_table);
+
+const mp_obj_type_t uos_mbfs_type = {
+    { &mp_type_type },
+    .name = MP_QSTR_MicroBitFS,
+    .locals_dict = (mp_obj_dict_t*)&uos_mbfs_locals_dict,
+};
+
+const uos_mbfs_obj_t uos_mbfs_obj = {
+    { &uos_mbfs_type },
+};
+
+#endif // MICROPY_VFS
 
 #endif // MICROPY_HW_HAS_BUILTIN_FLASH

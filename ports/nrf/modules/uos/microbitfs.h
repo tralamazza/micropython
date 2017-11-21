@@ -49,4 +49,10 @@ MP_DECLARE_CONST_FUN_OBJ_0(uos_mbfs_ilistdir_obj);
 MP_DECLARE_CONST_FUN_OBJ_1(uos_mbfs_remove_obj);
 MP_DECLARE_CONST_FUN_OBJ_1(uos_mbfs_stat_obj);
 
+typedef struct {
+    mp_obj_base_t base;
+} uos_mbfs_obj_t;
+
+extern const uos_mbfs_obj_t uos_mbfs_obj;
+
 #endif // __MICROPY_INCLUDED_FILESYSTEM_H__

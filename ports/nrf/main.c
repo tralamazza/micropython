@@ -39,6 +39,8 @@
 #include "py/gc.h"
 #include "py/compile.h"
 #include "lib/utils/pyexec.h"
+#include "extmod/vfs.h"
+#include "modules/uos/microbitfs.h"
 #include "readline.h"
 #include "gccollect.h"
 #include "modmachine.h"
@@ -141,7 +143,16 @@ pin_init0();
 
 #if MICROPY_HW_HAS_BUILTIN_FLASH
     microbit_filesystem_init();
-#endif
+#if MICROPY_VFS
+    mp_vfs_mount_t *vfs = m_new_obj(mp_vfs_mount_t);
+    vfs->str = "/flash";
+    vfs->len = 6; // strlen("/flash");
+    vfs->obj = MP_OBJ_TO_PTR(&uos_mbfs_obj);
+    vfs->next = NULL;
+    MP_STATE_VM(vfs_mount_table) = vfs;
+    MP_STATE_PORT(vfs_cur) = vfs;
+#endif // MICROPY_VFS
+#endif // MICROPY_HW_HAS_BUILTIN_FLASH
 
 #if MICROPY_HW_HAS_SDCARD
     // if an SD card is present then mount it on /sd/
