@@ -33,6 +33,7 @@
 #include "py/objstr.h"
 #include "lib/oofatfs/ff.h"
 #include "lib/oofatfs/diskio.h"
+#include "modules/uos/microbitfs.h"
 #include "extmod/vfs.h"
 #include "extmod/vfs_fat.h"
 #include "genhdr/mpversion.h"
@@ -79,6 +80,7 @@ STATIC mp_obj_t os_uname(void) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(os_uname_obj, os_uname);
 
+#if MICROPY_VFS
 /// \function sync()
 /// Sync all filesystems.
 STATIC mp_obj_t os_sync(void) {
@@ -89,6 +91,7 @@ STATIC mp_obj_t os_sync(void) {
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_0(mod_os_sync_obj, os_sync);
+#endif
 
 #if MICROPY_HW_ENABLE_RNG
 /// \function urandom(n)
@@ -133,6 +136,7 @@ STATIC const mp_rom_map_elem_t os_module_globals_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_uname), MP_ROM_PTR(&os_uname_obj) },
 
+#if MICROPY_VFS
     { MP_ROM_QSTR(MP_QSTR_chdir), MP_ROM_PTR(&mp_vfs_chdir_obj) },
     { MP_ROM_QSTR(MP_QSTR_getcwd), MP_ROM_PTR(&mp_vfs_getcwd_obj) },
     { MP_ROM_QSTR(MP_QSTR_listdir), MP_ROM_PTR(&mp_vfs_listdir_obj) },
@@ -146,6 +150,13 @@ STATIC const mp_rom_map_elem_t os_module_globals_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_sync), MP_ROM_PTR(&mod_os_sync_obj) },
 
+#elif MICROPY_HW_HAS_BUILTIN_FLASH
+    { MP_ROM_QSTR(MP_QSTR_listdir), MP_ROM_PTR(&uos_mbfs_listdir_obj) },
+    { MP_ROM_QSTR(MP_QSTR_ilistdir), MP_ROM_PTR(&uos_mbfs_ilistdir_obj) }, // uses ~136 bytes
+    { MP_ROM_QSTR(MP_QSTR_stat), MP_ROM_PTR(&uos_mbfs_stat_obj) },         // uses ~228 bytes
+    { MP_ROM_QSTR(MP_QSTR_remove), MP_ROM_PTR(&uos_mbfs_remove_obj) },
+#endif
+
     /// \constant sep - separation character used in paths
     { MP_ROM_QSTR(MP_QSTR_sep), MP_ROM_QSTR(MP_QSTR__slash_) },
 
@@ -155,9 +166,11 @@ STATIC const mp_rom_map_elem_t os_module_globals_table[] = {
 
     // these are MicroPython extensions
     { MP_ROM_QSTR(MP_QSTR_dupterm), MP_ROM_PTR(&mod_os_dupterm_obj) },
+#if MICROPY_VFS
     { MP_ROM_QSTR(MP_QSTR_mount), MP_ROM_PTR(&mp_vfs_mount_obj) },
     { MP_ROM_QSTR(MP_QSTR_umount), MP_ROM_PTR(&mp_vfs_umount_obj) },
     { MP_ROM_QSTR(MP_QSTR_VfsFat), MP_ROM_PTR(&mp_fat_vfs_type) },
+#endif
 };
 
 STATIC MP_DEFINE_CONST_DICT(os_module_globals, os_module_globals_table);

@@ -30,6 +30,7 @@
 #include <string.h>
 
 #include "py/nlr.h"
+#include "py/mperrno.h"
 #include "py/lexer.h"
 #include "py/parse.h"
 #include "py/obj.h"
@@ -42,6 +43,7 @@
 #include "gccollect.h"
 #include "modmachine.h"
 #include "modmusic.h"
+#include "modules/uos/microbitfs.h"
 #include "led.h"
 #include "uart.h"
 #include "nrf.h"
@@ -137,6 +139,10 @@ soft_reset:
 
 pin_init0();
 
+#if MICROPY_HW_HAS_BUILTIN_FLASH
+    microbit_filesystem_init();
+#endif
+
 #if MICROPY_HW_HAS_SDCARD
     // if an SD card is present then mount it on /sd/
     if (sdcard_is_present()) {
@@ -178,6 +184,16 @@ pin_init0();
            MP_PARSE_FILE_INPUT);
 #endif
 
+#if MICROPY_VFS || MICROPY_HW_HAS_BUILTIN_FLASH
+    // run boot.py and main.py if they exist.
+    if (mp_import_stat("boot.py") == MP_IMPORT_STAT_FILE) {
+        pyexec_file("boot.py");
+    }
+    if (mp_import_stat("main.py") == MP_IMPORT_STAT_FILE) {
+        pyexec_file("main.py");
+    }
+#endif
+
     // Main script is finished, so now go into REPL mode.
     // The REPL mode can change, or it can request a soft reset.
     int ret_code = 0;
@@ -207,11 +223,45 @@ pin_init0();
     if (ret_code == PYEXEC_FORCED_EXIT) {
         NVIC_SystemReset();
     } else {
+        printf("MPY: soft reboot\n");
         goto soft_reset;
     }
 
     return 0;
 }
+
+#if !MICROPY_VFS
+#if MICROPY_HW_HAS_BUILTIN_FLASH
+// Use micro:bit filesystem
+mp_lexer_t *mp_lexer_new_from_file(const char *filename) {
+    return uos_mbfs_new_reader(filename);
+}
+
+mp_import_stat_t mp_import_stat(const char *path) {
+    return uos_mbfs_import_stat(path);
+}
+
+STATIC mp_obj_t mp_builtin_open(size_t n_args, const mp_obj_t *args) {
+    return uos_mbfs_open(n_args, args);
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_builtin_open_obj, 1, 2, mp_builtin_open);
+
+#else
+// use dummy functions - no filesystem available
+mp_lexer_t *mp_lexer_new_from_file(const char *filename) {
+    mp_raise_OSError(MP_ENOENT);
+}
+
+mp_import_stat_t mp_import_stat(const char *path) {
+    return MP_IMPORT_STAT_NO_EXIST;
+}
+
+STATIC mp_obj_t mp_builtin_open(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs) {
+    mp_raise_OSError(MP_EPERM);
+}
+MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
+#endif
+#endif
 
 void HardFault_Handler(void)
 {
