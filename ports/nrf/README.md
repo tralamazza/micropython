@@ -28,6 +28,7 @@ This is a port of MicroPython to the Nordic Semiconductor nRF series of chips.
   * PCA10001
   * PCA10028
   * PCA10031 (dongle)
+  * [WT51822-S4AT](http://www.wireless-tag.com/wireless_module/BLE/WT51822-S4AT.html)
 * nRF52832
   * [PCA10040](http://infocenter.nordicsemi.com/index.jsp?topic=%2Fcom.nordic.infocenter.nrf52%2Fdita%2Fnrf52%2Fdevelopment%2Fnrf52_dev_kit.html) 
   * [Adafruit Feather nRF52](https://www.adafruit.com/product/3406)
@@ -71,6 +72,20 @@ The **make sd** will trigger a flash of the bluetooth stack before that applicat
 
 Note: further tuning of features to include in bluetooth or even setting up the device to use REPL over Bluetooth can be configured in the `bluetooth_conf.h`.
 
+## Compile with frozen modules
+
+Frozen modules are Python modules compiled to bytecode and added to the firmware
+image, as part of MicroPython. They can be imported as usual, using the `import`
+statement. The advantage is that frozen modules use a lot less RAM as the
+bytecode is stored in flash, not in RAM like when importing from a filesystem.
+Also, frozen modules are available even when no filesystem is present to import
+from.
+
+To use frozen modules, put them in a directory (e.g. `freeze/`) and supply
+`make` with the given directory. For example:
+
+     make BOARD=pca10040 FROZEN_MPY_DIR=freeze
+
 ## Target Boards and Make Flags
 
 Target Board (BOARD) | Bluetooth Stack (SD)    | Bluetooth Support      | Flash Util
@@ -80,6 +95,7 @@ pca10000             | s110                    | Peripheral             | [Segge
 pca10001             | s110                    | Peripheral             | [Segger](#segger-targets)
 pca10028             | s110                    | Peripheral             | [Segger](#segger-targets)
 pca10031             | s110                    | Peripheral             | [Segger](#segger-targets)
+wt51822_s4at         | s110                    | Peripheral             | Manual, see [datasheet](https://4tronix.co.uk/picobot2/WT51822-S4AT.pdf) for pinout
 pca10040             | s132                    | Peripheral and Central | [Segger](#segger-targets)
 feather52            | s132                    | Peripheral and Central | [UART DFU](#dfu-targets)
 arduino_primo        | s132                    | Peripheral and Central | [PyOCD](#pyocdopenocd-targets)

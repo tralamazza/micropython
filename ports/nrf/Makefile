@@ -29,8 +29,6 @@ endif
 # qstr definitions (must come before including py.mk)
 QSTR_DEFS = qstrdefsport.h $(BUILD)/pins_qstr.h
 
-FROZEN_MPY_DIR = freeze
-
 # include py core make definitions
 include ../../py/py.mk
 
@@ -65,7 +63,7 @@ NRF_DEFINES += -DCONFIG_GPIO_AS_PINRESET
 
 CFLAGS_CORTEX_M = -mthumb -mabi=aapcs -fsingle-precision-constant -Wdouble-promotion
 
-CFLAGS_MCU_m4 = $(CFLAGS_CORTEX_M) -mtune=cortex-m4 -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections
+CFLAGS_MCU_m4 = $(CFLAGS_CORTEX_M) -mtune=cortex-m4 -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 
 CFLAGS_MCU_m0 = $(CFLAGS_CORTEX_M) --short-enums -mtune=cortex-m0 -mcpu=cortex-m0 -mfloat-abi=soft -fno-builtin
 
@@ -76,6 +74,7 @@ CFLAGS += -fno-strict-aliasing
 CFLAGS += -fstack-usage
 CFLAGS += -Iboards/$(BOARD)
 CFLAGS += -DNRF5_HAL_H='<$(MCU_VARIANT)_hal.h>'
+CFLAGS += -flto
 
 LDFLAGS = $(CFLAGS)
 LDFLAGS += -Xlinker -Map=$(@:.elf=.map)
@@ -94,16 +93,35 @@ endif
 LIBS = \
 
 ifeq ($(MCU_VARIANT), nrf52)
-LIBM_FILE_NAME   = $(shell $(CC) $(CFLAGS) -print-file-name=libm.a)
-LIBC_FILE_NAME   = $(shell $(CC) $(CFLAGS) -print-file-name=libc.a)
 LIBGCC_FILE_NAME = $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
 
-LIBS += -L $(dir $(LIBM_FILE_NAME)) -lm
-LIBS += -L $(dir $(LIBC_FILE_NAME)) -lc
 LIBS += -L $(dir $(LIBGCC_FILE_NAME)) -lgcc
+
+
+SRC_LIB += $(addprefix lib/,\
+        libm/math.c \
+        libm/fmodf.c \
+        libm/nearbyintf.c \
+        libm/ef_sqrt.c \
+        libm/kf_rem_pio2.c \
+        libm/kf_sin.c \
+        libm/kf_cos.c \
+        libm/kf_tan.c \
+        libm/ef_rem_pio2.c \
+        libm/sf_sin.c \
+        libm/sf_cos.c \
+        libm/sf_tan.c \
+        libm/sf_frexp.c \
+        libm/sf_modf.c \
+        libm/sf_ldexp.c \
+        libm/asinfacosf.c \
+        libm/atanf.c \
+        libm/atan2f.c \
+	)
+
 endif
 
-SRC_LIB = $(addprefix lib/,\
+SRC_LIB += $(addprefix lib/,\
 	libc/string0.c \
 	mp-readline/readline.c \
 	utils/pyexec.c \
@@ -126,6 +144,7 @@ SRC_HAL = $(addprefix hal/,\
 	hal_temp.c \
 	hal_gpio.c \
 	hal_rng.c \
+	hal_nvmc.c \
 	)
 
 ifeq ($(MCU_VARIANT), nrf52)
@@ -159,6 +178,7 @@ DRIVERS_SRC_C += $(addprefix modules/,\
 	machine/led.c \
 	machine/temp.c \
 	uos/moduos.c \
+	uos/microbitfs.c \
 	utime/modutime.c \
 	pyb/modpyb.c \
 	ubluepy/modubluepy.c \
