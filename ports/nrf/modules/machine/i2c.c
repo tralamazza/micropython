@@ -128,22 +128,20 @@ mp_obj_t machine_hard_i2c_make_new(const mp_obj_type_t *type, size_t n_args, siz
     return MP_OBJ_FROM_PTR(self);
 }
 
-#include <stdio.h>
-
 int machine_hard_i2c_readfrom(mp_obj_base_t *self_in, uint16_t addr, uint8_t *dest, size_t len, bool stop) {
     machine_hard_i2c_obj_t *self = (machine_hard_i2c_obj_t *)self_in;
 
-    hal_twi_master_rx(self->i2c->instance, addr, len, dest, stop);
+    hal_twi_error_t err_code = hal_twi_master_rx(self->i2c->instance, addr, len, dest, stop);
 
-    return 0;
+    return err_code;
 }
 
 int machine_hard_i2c_writeto(mp_obj_base_t *self_in, uint16_t addr, const uint8_t *src, size_t len, bool stop) {
     machine_hard_i2c_obj_t *self = (machine_hard_i2c_obj_t *)self_in;
 
-    hal_twi_master_tx(self->i2c->instance, addr, len, src, stop);
+    hal_twi_error_t err_code = hal_twi_master_tx(self->i2c->instance, addr, len, src, stop);
 
-    return 0;
+    return err_code;
 }
 
 STATIC const mp_machine_i2c_p_t machine_hard_i2c_p = {

@@ -29,6 +29,8 @@
 
 #ifdef HAL_TWI_MODULE_ENABLED
 
+#define HAL_TWI_ERROR_CLR_MASK (7)
+
 static const uint32_t hal_twi_frequency_lookup[] = {
     TWI_FREQUENCY_FREQUENCY_K100, // 100 kbps
     TWI_FREQUENCY_FREQUENCY_K250, // 250 kbps
@@ -50,16 +52,18 @@ void hal_twi_master_init(NRF_TWI_Type * p_instance, hal_twi_init_t const * p_twi
     p_instance->FREQUENCY = hal_twi_frequency_lookup[p_twi_init->freq];
     p_instance->ENABLE    = (TWI_ENABLE_ENABLE_Enabled << TWI_ENABLE_ENABLE_Pos);
 }
-#include <stdio.h>
-void hal_twi_master_tx(NRF_TWI_Type  * p_instance,
-                       uint8_t         addr,
-                       uint16_t        transfer_size,
-                       const uint8_t * tx_data,
-                       bool            stop) {
+
+hal_twi_error_t hal_twi_master_tx(NRF_TWI_Type  * p_instance,
+                                  uint8_t         addr,
+                                  uint16_t        transfer_size,
+                                  const uint8_t * tx_data,
+                                  bool            stop) {
 
     uint16_t number_of_txd_bytes = 0;
 
-    p_instance->ADDRESS = addr;
+    p_instance->ERRORSRC = HAL_TWI_ERROR_CLR_MASK;
+
+    p_instance->ADDRESS  = addr;
 
     p_instance->EVENTS_TXDSENT = 0;
 
@@ -88,15 +92,19 @@ void hal_twi_master_tx(NRF_TWI_Type  * p_instance,
             ;
         }
     }
+
+    return p_instance->ERRORSRC;
 }
 
-void hal_twi_master_rx(NRF_TWI_Type  * p_instance,
-                       uint8_t         addr,
-                       uint16_t        transfer_size,
-                       uint8_t       * rx_data,
-                       bool            stop) {
+hal_twi_error_t hal_twi_master_rx(NRF_TWI_Type  * p_instance,
+                                  uint8_t         addr,
+                                  uint16_t        transfer_size,
+                                  uint8_t       * rx_data,
+                                  bool            stop) {
 
     uint16_t number_of_rxd_bytes = 0;
+
+    p_instance->ERRORSRC = HAL_TWI_ERROR_CLR_MASK;
 
     p_instance->ADDRESS = addr;
 
@@ -124,6 +132,8 @@ void hal_twi_master_rx(NRF_TWI_Type  * p_instance,
             ;
         }
     }
+
+    return p_instance->ERRORSRC;
 }
 
 void hal_twi_slave_init(NRF_TWI_Type * p_instance, hal_twi_init_t const * p_twi_init) {

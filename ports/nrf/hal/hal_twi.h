@@ -41,8 +41,16 @@
 
 #define TWI_IRQ_VALUES (const uint32_t[]){SPIM0_SPIS0_TWIM0_TWIS0_SPI0_TWI0_IRQn, \
                                           SPIM1_SPIS1_TWIM1_TWIS1_SPI1_TWI1_IRQn}
-
 #endif
+
+typedef enum
+{
+    HAL_TWI_ERROR_NONE      = 0x00,    /* No error */
+    HAL_TWI_ERROR_ORE       = 0x01,    /* Overrun error. A new byte was received before previous byte got read by software from the RXD register. (Previous data is lost). */
+    HAL_TWI_ERROR_ANACK     = 0x02,    /* NACK received after sending the address. */
+    HAL_TWI_ERROR_DNACK     = 0x04,    /* NACK received after sending a data byte (write '1' to clear). */
+} hal_twi_error_t;
+
 
 #if NRF52
 
@@ -99,17 +107,17 @@ typedef struct __TWI_HandleTypeDef
 
 void hal_twi_master_init(NRF_TWI_Type * p_instance, hal_twi_init_t const * p_twi_init);
 
-void hal_twi_master_tx(NRF_TWI_Type  * p_instance,
-                       uint8_t         addr,
-                       uint16_t        transfer_size,
-                       const uint8_t * tx_data,
-                       bool            stop);
+hal_twi_error_t hal_twi_master_tx(NRF_TWI_Type  * p_instance,
+                                  uint8_t         addr,
+                                  uint16_t        transfer_size,
+                                  const uint8_t * tx_data,
+                                  bool            stop);
 
-void hal_twi_master_rx(NRF_TWI_Type  * p_instance,
-                       uint8_t         addr,
-                       uint16_t        transfer_size,
-                       uint8_t       * rx_data,
-                       bool            stop);
+hal_twi_error_t hal_twi_master_rx(NRF_TWI_Type  * p_instance,
+                                  uint8_t         addr,
+                                  uint16_t        transfer_size,
+                                  uint8_t       * rx_data,
+                                  bool            stop);
 
 
 void hal_twi_slave_init(NRF_TWI_Type * p_instance, hal_twi_init_t const * p_twi_init);
