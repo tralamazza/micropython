@@ -178,13 +178,6 @@ uint32_t ble_drv_stack_enable(void) {
     ble_conf.gap_cfg.role_count_cfg.central_role_count  = 1;
     ble_conf.gap_cfg.role_count_cfg.central_sec_count   = 0;
     err_code = sd_ble_cfg_set(BLE_GAP_CFG_ROLE_COUNT, &ble_conf, app_ram_start_cfg);
-
-    /*
-    sd_ble_cfg_set(BLE_CONN_CFG_GATTC, &ble_conf, app_ram_start_cfg);
-    sd_ble_cfg_set(BLE_CONN_CFG_GATTS, &ble_conf, app_ram_start_cfg);
-    sd_ble_cfg_set(BLE_CONN_CFG_GATT, &ble_conf, app_ram_start_cfg);
-    sd_ble_cfg_set(BLE_CONN_CFG_L2CAP, &ble_conf, app_ram_start_cfg);
-*/
 #else
     // Enable BLE stack.
     ble_enable_params_t ble_enable_params;
