@@ -56,8 +56,17 @@
 #endif
 #include "timer.h"
 
+#if BLUETOOTH_SD
+#include "nrf_sdm.h"
+#endif
+
 #if (MICROPY_PY_BLE_NUS)
 #include "ble_uart.h"
+#endif
+
+#if MICROPY_PY_MACHINE_SOFT_PWM
+#include "ticker.h"
+#include "softpwm.h"
 #endif
 
 void do_str(const char *src, mp_parse_input_kind_t input_kind) {
@@ -205,6 +214,23 @@ pin_init0();
     }
 #endif
 
+#if MICROPY_PY_MACHINE_SOFT_PWM
+    ticker_init0();
+    softpwm_init0();
+#endif
+
+#if MICROPY_PY_MUSIC
+    microbit_music_init0();
+#endif
+#if BOARD_SPECIFIC_MODULES
+    board_modules_init0();
+#endif
+
+#if MICROPY_PY_MACHINE_SOFT_PWM
+    ticker_start();
+    pwm_start();
+#endif
+
     for (;;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             if (pyexec_raw_repl() != 0) {
@@ -220,12 +246,13 @@ pin_init0();
 
     mp_deinit();
 
-    if (ret_code == PYEXEC_FORCED_EXIT) {
-        NVIC_SystemReset();
-    } else {
-        printf("MPY: soft reboot\n");
-        goto soft_reset;
-    }
+    printf("MPY: soft reboot\n");
+
+#if BLUETOOTH_SD
+    sd_softdevice_disable();
+#endif
+
+    goto soft_reset;
 
     return 0;
 }
