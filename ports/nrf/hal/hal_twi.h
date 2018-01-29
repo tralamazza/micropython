@@ -47,7 +47,7 @@ typedef enum
 {
     HAL_TWI_ERROR_NONE  = 0x00,                     /* No error */
     HAL_TWI_ERROR_ORE   = TWI_ERRORSRC_OVERRUN_Msk, /* Overrun error. A new byte was received before previous
-                                                        byte got read by software from the RXD register. (Previous data is lost). */
+                                                       byte got read by software from the RXD register. (Previous data is lost). */
     HAL_TWI_ERROR_ANACK = TWI_ERRORSRC_ANACK_Msk,   /* NACK received after sending the address. */
     HAL_TWI_ERROR_DNACK = TWI_ERRORSRC_DNACK_Msk,   /* NACK received after sending a data byte (write '1' to clear). */
 } hal_twi_error_t;
