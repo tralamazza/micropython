@@ -30,6 +30,7 @@
 #include "py/nlr.h"
 #include "py/runtime.h"
 #include "py/mphal.h"
+#include "py/mperrno.h"
 #include "extmod/machine_i2c.h"
 #include "i2c.h"
 #include "hal_twi.h"
@@ -128,22 +129,28 @@ mp_obj_t machine_hard_i2c_make_new(const mp_obj_type_t *type, size_t n_args, siz
     return MP_OBJ_FROM_PTR(self);
 }
 
-#include <stdio.h>
-
 int machine_hard_i2c_readfrom(mp_obj_base_t *self_in, uint16_t addr, uint8_t *dest, size_t len, bool stop) {
     machine_hard_i2c_obj_t *self = (machine_hard_i2c_obj_t *)self_in;
 
-    hal_twi_master_rx(self->i2c->instance, addr, len, dest, stop);
+    hal_twi_error_t err_code = hal_twi_master_rx(self->i2c->instance, addr, len, dest, stop);
 
-    return 0;
+    if (err_code != HAL_TWI_ERROR_NONE) {
+        return -MP_EIO;
+    }
+
+    return len;
 }
 
 int machine_hard_i2c_writeto(mp_obj_base_t *self_in, uint16_t addr, const uint8_t *src, size_t len, bool stop) {
     machine_hard_i2c_obj_t *self = (machine_hard_i2c_obj_t *)self_in;
 
-    hal_twi_master_tx(self->i2c->instance, addr, len, src, stop);
+    hal_twi_error_t err_code = hal_twi_master_tx(self->i2c->instance, addr, len, src, stop);
 
-    return 0;
+    if (err_code != HAL_TWI_ERROR_NONE) {
+        return -MP_EIO;
+    }
+
+    return len;
 }
 
 STATIC const mp_machine_i2c_p_t machine_hard_i2c_p = {

@@ -29,6 +29,17 @@
 
 #ifdef HAL_TWI_MODULE_ENABLED
 
+#define HAL_TWI_ERROR_CLR_MASK (TWI_ERRORSRC_DNACK_Msk | \
+                                TWI_ERRORSRC_ANACK_Msk | \
+                                TWI_ERRORSRC_OVERRUN_Msk)
+
+#define HAL_TWI_PIN_CONFIG(pin) \
+    NRF_GPIO->PIN_CNF[pin] = ((GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos)   \
+                            | (GPIO_PIN_CNF_DRIVE_S0D1     << GPIO_PIN_CNF_DRIVE_Pos)   \
+                            | (GPIO_PIN_CNF_PULL_Pullup    << GPIO_PIN_CNF_PULL_Pos)    \
+                            | (GPIO_PIN_CNF_INPUT_Connect  << GPIO_PIN_CNF_INPUT_Pos)   \
+                            | (GPIO_PIN_CNF_DIR_Input      << GPIO_PIN_CNF_DIR_Pos))
+
 static const uint32_t hal_twi_frequency_lookup[] = {
     TWI_FREQUENCY_FREQUENCY_K100, // 100 kbps
     TWI_FREQUENCY_FREQUENCY_K250, // 250 kbps
@@ -36,6 +47,9 @@ static const uint32_t hal_twi_frequency_lookup[] = {
 };
 
 void hal_twi_master_init(NRF_TWI_Type * p_instance, hal_twi_init_t const * p_twi_init) {
+
+    HAL_TWI_PIN_CONFIG(p_twi_init->scl_pin->pin);
+    HAL_TWI_PIN_CONFIG(p_twi_init->sda_pin->pin);
 
 #if NRF52840_XXAA
     p_instance->PSEL.SCL  = p_twi_init->scl_pin->pin;
@@ -50,16 +64,18 @@ void hal_twi_master_init(NRF_TWI_Type * p_instance, hal_twi_init_t const * p_twi
     p_instance->FREQUENCY = hal_twi_frequency_lookup[p_twi_init->freq];
     p_instance->ENABLE    = (TWI_ENABLE_ENABLE_Enabled << TWI_ENABLE_ENABLE_Pos);
 }
-#include <stdio.h>
-void hal_twi_master_tx(NRF_TWI_Type  * p_instance,
-                       uint8_t         addr,
-                       uint16_t        transfer_size,
-                       const uint8_t * tx_data,
-                       bool            stop) {
 
-    uint16_t number_of_txd_bytes = 0;
+hal_twi_error_t hal_twi_master_tx(NRF_TWI_Type  * p_instance,
+                                  uint8_t         addr,
+                                  size_t          transfer_size,
+                                  const uint8_t * tx_data,
+                                  bool            stop) {
 
-    p_instance->ADDRESS = addr;
+    size_t number_of_txd_bytes = 0;
+
+    p_instance->ERRORSRC = HAL_TWI_ERROR_CLR_MASK;
+
+    p_instance->ADDRESS  = addr;
 
     p_instance->EVENTS_TXDSENT = 0;
 
@@ -68,7 +84,7 @@ void hal_twi_master_tx(NRF_TWI_Type  * p_instance,
 
     while (number_of_txd_bytes < transfer_size) {
         // wait for the transaction complete
-        while (p_instance->EVENTS_TXDSENT == 0) {
+        while (p_instance->EVENTS_TXDSENT == 0 || p_instance->ERRORSRC) {
             ;
         }
 
@@ -88,15 +104,19 @@ void hal_twi_master_tx(NRF_TWI_Type  * p_instance,
             ;
         }
     }
+
+    return p_instance->ERRORSRC;
 }
 
-void hal_twi_master_rx(NRF_TWI_Type  * p_instance,
-                       uint8_t         addr,
-                       uint16_t        transfer_size,
-                       uint8_t       * rx_data,
-                       bool            stop) {
+hal_twi_error_t hal_twi_master_rx(NRF_TWI_Type  * p_instance,
+                                  uint8_t         addr,
+                                  size_t          transfer_size,
+                                  uint8_t       * rx_data,
+                                  bool            stop) {
 
-    uint16_t number_of_rxd_bytes = 0;
+    size_t number_of_rxd_bytes = 0;
+
+    p_instance->ERRORSRC = HAL_TWI_ERROR_CLR_MASK;
 
     p_instance->ADDRESS = addr;
 
@@ -106,7 +126,7 @@ void hal_twi_master_rx(NRF_TWI_Type  * p_instance,
 
     while (number_of_rxd_bytes < transfer_size) {
         // wait for the transaction complete
-        while (p_instance->EVENTS_RXDREADY == 0) {
+        while (p_instance->EVENTS_RXDREADY == 0 || p_instance->ERRORSRC) {
             ;
         }
 
@@ -124,6 +144,8 @@ void hal_twi_master_rx(NRF_TWI_Type  * p_instance,
             ;
         }
     }
+
+    return p_instance->ERRORSRC;
 }
 
 void hal_twi_slave_init(NRF_TWI_Type * p_instance, hal_twi_init_t const * p_twi_init) {
