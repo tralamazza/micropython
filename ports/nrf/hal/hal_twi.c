@@ -74,7 +74,7 @@ hal_twi_error_t hal_twi_master_tx(NRF_TWI_Type  * p_instance,
 
     while (number_of_txd_bytes < transfer_size) {
         // wait for the transaction complete
-        while (p_instance->EVENTS_TXDSENT == 0) {
+        while (p_instance->EVENTS_TXDSENT == 0 || p_instance->ERRORSRC) {
             ;
         }
 
@@ -116,7 +116,7 @@ hal_twi_error_t hal_twi_master_rx(NRF_TWI_Type  * p_instance,
 
     while (number_of_rxd_bytes < transfer_size) {
         // wait for the transaction complete
-        while (p_instance->EVENTS_RXDREADY == 0) {
+        while (p_instance->EVENTS_RXDREADY == 0 || p_instance->ERRORSRC) {
             ;
         }
 
