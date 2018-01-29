@@ -109,13 +109,13 @@ void hal_twi_master_init(NRF_TWI_Type * p_instance, hal_twi_init_t const * p_twi
 
 hal_twi_error_t hal_twi_master_tx(NRF_TWI_Type  * p_instance,
                                   uint8_t         addr,
-                                  uint16_t        transfer_size,
+                                  size_t          transfer_size,
                                   const uint8_t * tx_data,
                                   bool            stop);
 
 hal_twi_error_t hal_twi_master_rx(NRF_TWI_Type  * p_instance,
                                   uint8_t         addr,
-                                  uint16_t        transfer_size,
+                                  size_t          transfer_size,
                                   uint8_t       * rx_data,
                                   bool            stop);
 

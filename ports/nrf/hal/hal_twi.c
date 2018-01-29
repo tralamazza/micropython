@@ -29,7 +29,9 @@
 
 #ifdef HAL_TWI_MODULE_ENABLED
 
-#define HAL_TWI_ERROR_CLR_MASK (7)
+#define HAL_TWI_ERROR_CLR_MASK (TWI_ERRORSRC_DNACK_Msk | \
+                                TWI_ERRORSRC_ANACK_Msk | \
+                                TWI_ERRORSRC_OVERRUN_Msk)
 
 static const uint32_t hal_twi_frequency_lookup[] = {
     TWI_FREQUENCY_FREQUENCY_K100, // 100 kbps
@@ -55,11 +57,11 @@ void hal_twi_master_init(NRF_TWI_Type * p_instance, hal_twi_init_t const * p_twi
 
 hal_twi_error_t hal_twi_master_tx(NRF_TWI_Type  * p_instance,
                                   uint8_t         addr,
-                                  uint16_t        transfer_size,
+                                  size_t          transfer_size,
                                   const uint8_t * tx_data,
                                   bool            stop) {
 
-    uint16_t number_of_txd_bytes = 0;
+    size_t number_of_txd_bytes = 0;
 
     p_instance->ERRORSRC = HAL_TWI_ERROR_CLR_MASK;
 
@@ -98,11 +100,11 @@ hal_twi_error_t hal_twi_master_tx(NRF_TWI_Type  * p_instance,
 
 hal_twi_error_t hal_twi_master_rx(NRF_TWI_Type  * p_instance,
                                   uint8_t         addr,
-                                  uint16_t        transfer_size,
+                                  size_t          transfer_size,
                                   uint8_t       * rx_data,
                                   bool            stop) {
 
-    uint16_t number_of_rxd_bytes = 0;
+    size_t number_of_rxd_bytes = 0;
 
     p_instance->ERRORSRC = HAL_TWI_ERROR_CLR_MASK;
 
