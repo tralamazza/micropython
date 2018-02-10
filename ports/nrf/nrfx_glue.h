@@ -42,6 +42,8 @@
 #define NRFX_IRQ_ENABLE(irq_number) sd_nvic_EnableIRQ(irq_number)
 #define NRFX_IRQ_DISABLE(irq_number) sd_nvic_DisableIRQ(irq_number)
 #define NRFX_IRQ_PRIORITY_SET(irq_number, priority) sd_nvic_SetPriority(irq_number, priority)
+#define NRFX_IRQ_PENDING_SET(irq_number) sd_nvic_SetPendingIRQ(irq_number)
+#define NRFX_IRQ_PENDING_CLEAR(irq_number) sd_nvic_ClearPendingIRQ(irq_number)
 
 #define NRFX_CRITICAL_SECTION_ENTER() \
     { \
@@ -57,6 +59,8 @@
 #define NRFX_IRQ_ENABLE(irq_number) NVIC_EnableIRQ(irq_number)
 #define NRFX_IRQ_DISABLE(irq_number) NVIC_DisableIRQ(irq_number)
 #define NRFX_IRQ_PRIORITY_SET(irq_number, priority) NVIC_SetPriority(irq_number, priority)
+#define NRFX_IRQ_PENDING_SET(irq_number) NVIC_SetPendingIRQ(irq_number)
+#define NRFX_IRQ_PENDING_CLEAR(irq_number) NVIC_ClearPendingIRQ(irq_number)
 
 // Source:
 // https://devzone.nordicsemi.com/f/nordic-q-a/8572/disable-interrupts-and-enable-interrupts-if-they-where-enabled/31347#31347
