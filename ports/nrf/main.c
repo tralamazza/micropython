@@ -50,6 +50,7 @@
 #include "pin.h"
 #include "spi.h"
 #include "i2c.h"
+#include "adc.h"
 #include "rtcounter.h"
 #if MICROPY_PY_MACHINE_HW_PWM
 #include "pwm.h"
@@ -120,6 +121,10 @@ soft_reset:
 
 #if MICROPY_PY_MACHINE_I2C
     i2c_init0();
+#endif
+
+#if MICROPY_PY_MACHINE_ADC
+    adc_init0();
 #endif
 
 #if MICROPY_PY_MACHINE_HW_PWM

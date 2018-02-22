@@ -28,10 +28,12 @@
 #define ADC_H__
 
 #if NRF51
-#include "nrf_adc.h"
+#include "nrfx_adc.h"
 #else
-#include "nrf_saadc.h"
+#include "nrfx_saadc.h"
 #endif
 extern const mp_obj_type_t machine_adc_type;
+
+void adc_init0(void);
 
 #endif // ADC_H__
