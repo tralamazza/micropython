@@ -54,15 +54,9 @@ typedef struct _machine_hard_uart_obj_t {
 } machine_hard_uart_obj_t;
 
 static const nrfx_uart_t instance0 = NRFX_UART_INSTANCE(0);
-#if NRF52840_XXAA
-static const nrfx_uart_t instance1 = NRFX_UART_INSTANCE(1);
-#endif
 
 STATIC const machine_hard_uart_obj_t machine_hard_uart_obj[] = {
     {{&machine_hard_uart_type}, .p_uart = &instance0},
-#if NRF52840_XXAA
-    {{&machine_hard_uart_type}, .p_uart = &instance1},
-#endif
 };
 
 void uart_init0(void) {
