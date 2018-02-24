@@ -37,7 +37,7 @@
 #include "genhdr/pins.h"
 #include "pwm.h"
 
-#if NRF52
+#if !NRF51
 // Use PWM hardware.
 #include "nrfx_pwm.h"
 #endif

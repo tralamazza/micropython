@@ -32,7 +32,7 @@
 #if defined(NRF51)
 #define FLASH_PAGESIZE (1024)
 
-#elif defined(NRF52)
+#elif defined(NRF52) || defined(NRF52840_XXAA)
 #define FLASH_PAGESIZE (4096)
 #else
 #error Unknown chip
