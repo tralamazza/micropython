@@ -220,7 +220,7 @@ DRIVERS_SRC_C += $(addprefix modules/,\
 # Custom micropython startup file with smaller interrupt vector table
 # than the file provided in nrfx.
 SRC_C += \
-	device/$(MCU_VARIANT)/startup_$(MCU_SUB_VARIANT).c \
+	device/startup_$(MCU_SUB_VARIANT).c \
 
 ifneq ($(FROZEN_MPY_DIR),)
 FROZEN_MPY_PY_FILES := $(shell find -L $(FROZEN_MPY_DIR) -type f -name '*.py')
