@@ -62,7 +62,19 @@ INC += -I../../lib/nrfx/hal
 MCU_VARIANT_UPPER = $(shell echo $(MCU_VARIANT) | tr '[:lower:]' '[:upper:]')
 MCU_SUB_VARIANT_UPPER = $(shell echo $(MCU_SUB_VARIANT) | tr '[:lower:]' '[:upper:]')
 
-NRF_DEFINES += -D$(MCU_VARIANT_UPPER)
+# Figure out correct system file to use base on chip sub-variant name.
+SYSTEM_C_SRC :=
+ifeq ($(MCU_SUB_VARIANT),nrf51822)
+	SYSTEM_C_SRC += $(addprefix lib/nrfx/mdk/, system_nrf51.c)
+        NRF_DEFINES += -D$(MCU_VARIANT_UPPER)
+else ifeq ($(MCU_SUB_VARIANT),nrf52832)
+	SYSTEM_C_SRC += $(addprefix lib/nrfx/mdk/, system_nrf52.c)
+        NRF_DEFINES += -D$(MCU_VARIANT_UPPER)
+else ifeq ($(MCU_SUB_VARIANT),nrf52840)
+	SYSTEM_C_SRC += $(addprefix lib/nrfx/mdk/, system_nrf52840.c)
+	# Do not pass MCU_VARIANT_UPPER flag, as NRF52 defines NRF52832 only.
+endif
+
 NRF_DEFINES += -D$(MCU_SUB_VARIANT_UPPER)
 NRF_DEFINES += -DCONFIG_GPIO_AS_PINRESET
 
@@ -156,7 +168,7 @@ SRC_NRFX += $(addprefix lib/nrfx/drivers/src/,\
 	nrfx_pwm.c \
 	)
 
-SRC_NRF_HAL += $(addprefix lib/nrfx/hal/,\
+SRC_NRFX_HAL += $(addprefix lib/nrfx/hal/,\
 	nrf_nvmc.c \
 	)
 
@@ -205,8 +217,9 @@ DRIVERS_SRC_C += $(addprefix modules/,\
 	random/modrandom.c \
 	)
 
+# Custom micropython startup file with smaller interrupt vector table
+# than the file provided in nrfx.
 SRC_C += \
-	device/$(MCU_VARIANT)/system_$(MCU_SUB_VARIANT).c \
 	device/$(MCU_VARIANT)/startup_$(MCU_SUB_VARIANT).c \
 
 ifneq ($(FROZEN_MPY_DIR),)
@@ -217,8 +230,9 @@ endif
 OBJ += $(PY_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_LIB:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_NRFX:.c=.o))
-OBJ += $(addprefix $(BUILD)/, $(SRC_NRF_HAL:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(SRC_NRFX_HAL:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(DRIVERS_SRC_C:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(SYSTEM_C_SRC:.c=.o))
 OBJ += $(BUILD)/pins_gen.o
 
 $(BUILD)/$(FATFS_DIR)/ff.o: COPT += -Os
