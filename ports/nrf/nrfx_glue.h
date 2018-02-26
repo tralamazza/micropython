@@ -39,11 +39,77 @@
 #include "nrf_nvic.h"
 #endif
 
+#include "ble_drv.h"
+
+#if (BLUETOOTH_SD == 110)
+#define NRFX_IRQ_ENABLE(irq_number) \
+    do { \
+        if (ble_drv_stack_enabled() == 1) \
+        { \
+            sd_nvic_EnableIRQ(irq_number); \
+        } else { \
+            NVIC_EnableIRQ(irq_number); \
+        } \
+    } while(0)
+#else
 #define NRFX_IRQ_ENABLE(irq_number) sd_nvic_EnableIRQ(irq_number)
+#endif
+
+#if (BLUETOOTH_SD == 110)
+#define NRFX_IRQ_DISABLE(irq_number) \
+    do { \
+        if (ble_drv_stack_enabled() == 1) \
+        { \
+            sd_nvic_DisableIRQ(irq_number);  \
+        } else { \
+            NVIC_DisableIRQ(irq_number); \
+        } \
+    } while(0)
+#else
 #define NRFX_IRQ_DISABLE(irq_number) sd_nvic_DisableIRQ(irq_number)
+#endif
+
+#if (BLUETOOTH_SD == 110)
+#define NRFX_IRQ_PRIORITY_SET(irq_number, priority) \
+    do { \
+        if (ble_drv_stack_enabled() == 1) \
+        { \
+            sd_nvic_SetPriority(irq_number, priority); \
+        } else { \
+            NVIC_SetPriority(irq_number, priority); \
+        } \
+    } while(0)
+#else
 #define NRFX_IRQ_PRIORITY_SET(irq_number, priority) sd_nvic_SetPriority(irq_number, priority)
+#endif
+
+#if (BLUETOOTH_SD == 110)
+#define NRFX_IRQ_PENDING_SET(irq_number) \
+    do { \
+        if (ble_drv_stack_enabled() == 1) \
+        { \
+            sd_nvic_SetPendingIRQ(irq_number); \
+        } else { \
+            NVIC_SetPendingIRQ(irq_number); \
+        } \
+    } while(0)
+#else
 #define NRFX_IRQ_PENDING_SET(irq_number) sd_nvic_SetPendingIRQ(irq_number)
+#endif
+
+#if (BLUETOOTH_SD == 110)
+#define NRFX_IRQ_PENDING_CLEAR(irq_number) \
+    do { \
+        if (ble_drv_stack_enabled() == 1) \
+        { \
+            sd_nvic_ClearPendingIRQ(irq_number); \
+        } else { \
+            NVIC_ClearPendingIRQ(irq_number)(irq_number); \
+        } \
+    } while(0)
+#else
 #define NRFX_IRQ_PENDING_CLEAR(irq_number) sd_nvic_ClearPendingIRQ(irq_number)
+#endif
 
 #define NRFX_CRITICAL_SECTION_ENTER() \
     { \
