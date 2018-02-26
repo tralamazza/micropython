@@ -58,7 +58,7 @@ void ticker_init0(void) {
     ticker->SHORTS = 0;
 
 #ifdef NRF51
-    NRFX_IRQ_PRIORITY_SET(FastTicker_IRQn, 2);
+    NRFX_IRQ_PRIORITY_SET(FastTicker_IRQn, 1);
 #else
     NRFX_IRQ_PRIORITY_SET(FastTicker_IRQn, 2);
 #endif
