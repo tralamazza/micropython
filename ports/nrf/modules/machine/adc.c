@@ -71,14 +71,14 @@ STATIC machine_adc_obj_t machine_adc_obj[] = {
 #endif
 };
 
-#if !NRF51
+#if defined(NRF52_SERIES)
 STATIC void saadc_event_handler(nrfx_saadc_evt_t const * p_event) {
     (void)p_event;
 }
 #endif
 
 void adc_init0(void) {
-#if !NRF51
+#if defined(NRF52_SERIES)
     const nrfx_saadc_config_t config = {
         .resolution         = NRF_SAADC_RESOLUTION_8BIT,
         .oversample         = NRF_SAADC_OVERSAMPLE_DISABLED,
@@ -129,7 +129,7 @@ STATIC mp_obj_t machine_adc_make_new(const mp_obj_type_t *type, size_t n_args, s
     int adc_id = adc_find(args[ARG_pin].u_obj);
     machine_adc_obj_t *self = &machine_adc_obj[adc_id];
 
-#if !NRF51
+#if defined(NRF52_SERIES)
     const nrf_saadc_channel_config_t config = {
         .resistor_p = NRF_SAADC_RESISTOR_DISABLED,
         .resistor_n = NRF_SAADC_RESISTOR_DISABLED,
