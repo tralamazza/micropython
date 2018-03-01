@@ -28,7 +28,7 @@
 #ifndef NRFX_CONFIG_H
 #define NRFX_CONFIG_H
 
-#include "mpconfigboard.h"
+#include "mpconfigport.h"
 
 // Port specific defines
 #ifndef NRFX_LOG_ENABLED
