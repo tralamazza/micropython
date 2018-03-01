@@ -53,7 +53,7 @@ STATIC mp_obj_t machine_timer_callbacks[] = {
 
 STATIC const machine_timer_obj_t machine_timer_obj[] = {
     {{&machine_timer_type}, NRFX_TIMER_INSTANCE(0)},
-#if !defined(MICROPY_PY_MACHINE_SOFT_PWM) && (MICROPY_PY_MACHINE_SOFT_PWM != 0)
+#if !defined(MICROPY_PY_MACHINE_SOFT_PWM) || (MICROPY_PY_MACHINE_SOFT_PWM == 0)
     {{&machine_timer_type}, NRFX_TIMER_INSTANCE(1)},
 #endif
     {{&machine_timer_type}, NRFX_TIMER_INSTANCE(2)},
