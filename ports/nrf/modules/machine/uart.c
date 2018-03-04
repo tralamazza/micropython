@@ -234,6 +234,7 @@ STATIC mp_obj_t machine_hard_uart_make_new(const mp_obj_type_t *type, size_t n_a
     // Set NULL as callback function to keep it blocking
     nrfx_uart_init(self->p_uart, &config, NULL);
 
+    nrfx_uart_rx_enable(self->p_uart);
 
     return MP_OBJ_FROM_PTR(self);
 }
