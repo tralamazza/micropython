@@ -27,6 +27,7 @@
 #if BLUETOOTH_SD
 
 #include <string.h>
+#include "ble.h"
 #include "ble_uart.h"
 #include "ringbuffer.h"
 #include "hal/hal_time.h"
@@ -89,6 +90,11 @@ ringBuffer_typedef(uint8_t, ringbuffer_t);
 static ringbuffer_t   m_rx_ring_buffer;
 static ringbuffer_t * mp_rx_ring_buffer = &m_rx_ring_buffer;
 static uint8_t        m_rx_ring_buffer_data[128];
+static ringbuffer_t   m_tx_ring_buffer;
+static ringbuffer_t * mp_tx_ring_buffer = &m_tx_ring_buffer;
+static uint8_t        m_tx_ring_buffer_data[BLE_DRV_MAX_QUEUED_NOTIFICATIONS * (GATT_MTU_SIZE_DEFAULT - 3)];
+// WARNING: the tx ring buffer may not be bigger than this. If it's bigger,
+// ble_drv_attr_s_notify will block inside gatts_event_handler.
 
 static ubluepy_advertise_data_t m_adv_data_uart_service;
 
@@ -110,9 +116,17 @@ void mp_hal_stdout_tx_strn(const char *str, size_t len) {
     uint8_t *buf = (uint8_t *)str;
     size_t send_len;
 
+    if (!m_cccd_enabled) {
+        // queue for incoming connection
+        for (size_t i = 0; i < len; i++) {
+            bufferWrite(mp_tx_ring_buffer, str[i]);
+        }
+        return;
+    }
+
     while (len > 0) {
-        if (len >= 20) {
-            send_len = 20; // (GATT_MTU_SIZE_DEFAULT - 3)
+        if (len >= GATT_MTU_SIZE_DEFAULT - 3) {
+            send_len = GATT_MTU_SIZE_DEFAULT - 3; // == 20
         } else {
             send_len = len;
         }
@@ -152,6 +166,21 @@ STATIC void gatts_event_handler(mp_obj_t self_in, uint16_t event_id, uint16_t at
 
     if (event_id == 80) { // gatts write
         if (ble_uart_char_tx.cccd_handle == attr_handle) {
+            while (!isBufferEmpty(mp_tx_ring_buffer)) {
+                size_t send_len = 0;
+                uint8_t buf[(GATT_MTU_SIZE_DEFAULT - 3)]; // == 20
+                for (size_t i = 0; i < sizeof(buf) && !isBufferEmpty(mp_tx_ring_buffer); i++) {
+                    bufferRead(mp_tx_ring_buffer, buf[i]);
+                    send_len++;
+                }
+
+                ubluepy_characteristic_obj_t * p_char = &ble_uart_char_tx;
+
+                ble_drv_attr_s_notify(p_char->p_service->p_periph->conn_handle,
+                                      p_char->handle,
+                                      send_len,
+                                      buf);
+            }
             m_cccd_enabled = true;
         } else if (ble_uart_char_rx.handle == attr_handle) {
             for (uint16_t i = 0; i < length; i++) {
@@ -242,6 +271,11 @@ void ble_uart_init0(void) {
     m_rx_ring_buffer.end = 0;
     m_rx_ring_buffer.elems = m_rx_ring_buffer_data;
 
+    m_tx_ring_buffer.size = sizeof(m_tx_ring_buffer_data) + 1;
+    m_tx_ring_buffer.start = 0;
+    m_tx_ring_buffer.end = 0;
+    m_tx_ring_buffer.elems = m_tx_ring_buffer_data;
+
     m_connected = false;
 
     ble_uart_advertise();
@@ -260,10 +294,6 @@ void ble_uart_advertise(void) {
 #else
     (void)ble_drv_advertise_data(&m_adv_data_uart_service);
 #endif // BLUETOOTH_WEBBLUETOOTH_REPL
-}
-
-bool ble_uart_connected(void) {
-    return (m_connected);
 }
 
 bool ble_uart_enabled(void) {

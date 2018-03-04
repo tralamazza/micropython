@@ -34,6 +34,9 @@
 
 #include "modubluepy.h"
 
+// Can send up to 6 notifications in a radio event.
+#define BLE_DRV_MAX_QUEUED_NOTIFICATIONS (6)
+
 typedef struct {
     uint8_t   addr[6];
     uint8_t   addr_type;

@@ -73,7 +73,7 @@ if (ble_drv_stack_enabled() == 0) { \
 }
 
 static volatile bool m_adv_in_progress;
-static volatile bool m_tx_in_progress;
+static volatile uint32_t m_tx_in_progress;
 
 static ble_drv_gap_evt_callback_t          gap_event_handler;
 static ble_drv_gatts_evt_callback_t        gatts_event_handler;
@@ -119,7 +119,7 @@ void softdevice_assert_handler(uint32_t id, uint32_t pc, uint32_t info) {
 #endif
 uint32_t ble_drv_stack_enable(void) {
     m_adv_in_progress = false;
-    m_tx_in_progress  = false;
+    m_tx_in_progress  = 0;
 
 #if (BLUETOOTH_SD == 100) || (BLUETOOTH_SD == 110)
 #if BLUETOOTH_LFCLK_RC
@@ -669,11 +669,11 @@ void ble_drv_attr_s_notify(uint16_t conn_handle, uint16_t handle, uint16_t len, 
     hvx_params.p_len  = &hvx_len;
     hvx_params.p_data = p_data;
 
-    while (m_tx_in_progress) {
+    while (m_tx_in_progress >= BLE_DRV_MAX_QUEUED_NOTIFICATIONS) {
         ;
     }
 
-    m_tx_in_progress = true;
+    m_tx_in_progress++;
     uint32_t err_code;
     if ((err_code = sd_ble_gatts_hvx(conn_handle, &hvx_params)) != 0) {
         nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_OSError,
@@ -979,7 +979,7 @@ static void ble_evt_handler(ble_evt_t * p_ble_evt) {
         case BLE_EVT_TX_COMPLETE:
 #endif
             BLE_DRIVER_LOG("BLE EVT TX COMPLETE\n");
-            m_tx_in_progress = false;
+            m_tx_in_progress -= p_ble_evt->evt.common_evt.params.tx_complete.count;
             break;
 
         case BLE_GAP_EVT_SEC_PARAMS_REQUEST:

@@ -47,6 +47,7 @@
 #include "led.h"
 #include "uart.h"
 #include "nrf.h"
+#include "nrf_sdm.h"
 #include "pin.h"
 #include "spi.h"
 #include "i2c.h"
@@ -138,7 +139,11 @@ soft_reset:
     uart_init0();
 #endif
 
-#if (MICROPY_PY_BLE_NUS == 0)
+#if MICROPY_PY_BLE_NUS
+    ble_uart_init0();
+#endif
+
+#if !MICROPY_PY_BLE_NUS
     {
         mp_obj_t args[2] = {
             MP_OBJ_NEW_SMALL_INT(0),
@@ -210,7 +215,7 @@ pin_init0();
     int ret_code = 0;
 
 #if MICROPY_PY_BLE_NUS
-    ble_uart_init0();
+    // wait for a connection
     while (!ble_uart_enabled()) {
         ;
     }

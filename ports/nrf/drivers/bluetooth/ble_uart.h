@@ -34,7 +34,6 @@
 
 void ble_uart_init0(void);
 void ble_uart_advertise(void);
-bool ble_uart_connected(void);
 bool ble_uart_enabled(void);
 
 #endif // BLUETOOTH_SD
