@@ -29,6 +29,7 @@
 
 #include "py/nlr.h"
 #include "py/runtime.h"
+#include "py/mperrno.h"
 #include "py/mphal.h"
 #include "extmod/machine_i2c.h"
 #include "i2c.h"
@@ -89,7 +90,7 @@ mp_obj_t machine_hard_i2c_make_new(const mp_obj_type_t *type, size_t n_args, siz
     config.scl = mp_hal_get_pin_obj(args[ARG_scl].u_obj)->pin;
     config.sda = mp_hal_get_pin_obj(args[ARG_sda].u_obj)->pin;
 
-    config.frequency = NRF_TWI_FREQ_100K;
+    config.frequency = NRF_TWI_FREQ_400K;
 
     config.hold_bus_uninit = false;
 
@@ -102,11 +103,18 @@ mp_obj_t machine_hard_i2c_make_new(const mp_obj_type_t *type, size_t n_args, siz
 int machine_hard_i2c_readfrom(mp_obj_base_t *self_in, uint16_t addr, uint8_t *dest, size_t len, bool stop) {
     machine_hard_i2c_obj_t *self = (machine_hard_i2c_obj_t *)self_in;
 
+    nrfx_twi_enable(&self->p_twi);
+
     nrfx_err_t err_code = nrfx_twi_rx(&self->p_twi, addr, dest, len);
 
     if (err_code != NRFX_SUCCESS) {
-        return -err_code;
+        if (err_code == NRFX_ERROR_DRV_TWI_ERR_ANACK) {
+            return -MP_ENODEV;
+        }
+        return -MP_ETIMEDOUT;
     }
+
+    nrfx_twi_disable(&self->p_twi);
 
     return 0;
 }
@@ -114,13 +122,20 @@ int machine_hard_i2c_readfrom(mp_obj_base_t *self_in, uint16_t addr, uint8_t *de
 int machine_hard_i2c_writeto(mp_obj_base_t *self_in, uint16_t addr, const uint8_t *src, size_t len, bool stop) {
     machine_hard_i2c_obj_t *self = (machine_hard_i2c_obj_t *)self_in;
 
+    nrfx_twi_enable(&self->p_twi);
+
     nrfx_err_t err_code = nrfx_twi_tx(&self->p_twi, addr, src, len, !stop);
 
     if (err_code != NRFX_SUCCESS) {
-         return -err_code;
+        if (err_code == NRFX_ERROR_DRV_TWI_ERR_ANACK) {
+            return -MP_ENODEV;
+        }
+        return -MP_ETIMEDOUT;
     }
 
-    return 0;
+    nrfx_twi_disable(&self->p_twi);
+
+    return len;
 }
 
 STATIC const mp_machine_i2c_p_t machine_hard_i2c_p = {
