@@ -111,6 +111,9 @@ int machine_hard_i2c_readfrom(mp_obj_base_t *self_in, uint16_t addr, uint8_t *de
         if (err_code == NRFX_ERROR_DRV_TWI_ERR_ANACK) {
             return -MP_ENODEV;
         }
+        else if (err_code == NRFX_ERROR_DRV_TWI_ERR_DNACK) {
+            return -MP_EIO;
+        }
         return -MP_ETIMEDOUT;
     }
 
@@ -129,6 +132,9 @@ int machine_hard_i2c_writeto(mp_obj_base_t *self_in, uint16_t addr, const uint8_
     if (err_code != NRFX_SUCCESS) {
         if (err_code == NRFX_ERROR_DRV_TWI_ERR_ANACK) {
             return -MP_ENODEV;
+        }
+        else if (err_code == NRFX_ERROR_DRV_TWI_ERR_DNACK) {
+            return -MP_EIO;
         }
         return -MP_ETIMEDOUT;
     }
