@@ -217,8 +217,8 @@ STATIC const mp_rom_map_elem_t machine_spi_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&mp_machine_spi_write_obj) },
     { MP_ROM_QSTR(MP_QSTR_write_readinto), MP_ROM_PTR(&mp_machine_spi_write_readinto_obj) },
 
-    { MP_ROM_QSTR(MP_QSTR_MSB), MP_ROM_INT(NRFX_SPI_BIT_ORDER_MSB_FIRST) },
-    { MP_ROM_QSTR(MP_QSTR_LSB), MP_ROM_INT(NRFX_SPI_BIT_ORDER_LSB_FIRST) },
+    { MP_ROM_QSTR(MP_QSTR_MSB), MP_ROM_INT(NRF_SPI_BIT_ORDER_MSB_FIRST) },
+    { MP_ROM_QSTR(MP_QSTR_LSB), MP_ROM_INT(NRF_SPI_BIT_ORDER_LSB_FIRST) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(machine_spi_locals_dict, machine_spi_locals_dict_table);
@@ -257,19 +257,19 @@ STATIC mp_obj_t machine_hard_spi_make_new(mp_arg_val_t *args) {
     int baudrate = args[ARG_NEW_baudrate].u_int;
 
     if (baudrate <= 125000) {
-        config.frequency = NRFX_SPI_FREQ_125K;
+        config.frequency = NRF_SPI_FREQ_125K;
     } else if (baudrate <= 250000) {
-        config.frequency = NRFX_SPI_FREQ_250K;
+        config.frequency = NRF_SPI_FREQ_250K;
     } else if (baudrate <= 500000) {
-        config.frequency = NRFX_SPI_FREQ_500K;
+        config.frequency = NRF_SPI_FREQ_500K;
     } else if (baudrate <= 1000000) {
-        config.frequency = NRFX_SPI_FREQ_1M;
+        config.frequency = NRF_SPI_FREQ_1M;
     } else if (baudrate <= 2000000) {
-        config.frequency = NRFX_SPI_FREQ_2M;
+        config.frequency = NRF_SPI_FREQ_2M;
     } else if (baudrate <= 4000000) {
-        config.frequency = NRFX_SPI_FREQ_4M;
+        config.frequency = NRF_SPI_FREQ_4M;
     } else if (baudrate <= 8000000) {
-        config.frequency = NRFX_SPI_FREQ_8M;
+        config.frequency = NRF_SPI_FREQ_8M;
 #if NRF52840_XXAA
     } else if (baudrate <= 16000000) {
         config.frequency = SPIM_FREQUENCY_FREQUENCY_M16; // Temporary value until SPIM support is addressed (EasyDMA)
@@ -277,7 +277,7 @@ STATIC mp_obj_t machine_hard_spi_make_new(mp_arg_val_t *args) {
         config.frequency = SPIM_FREQUENCY_FREQUENCY_M32; // Temporary value until SPIM support is addressed (EasyDMA)
 #endif
     } else { // Default
-        config.frequency = NRFX_SPI_FREQ_1M;
+        config.frequency = NRF_SPI_FREQ_1M;
     }
 
 #ifdef NRF51
@@ -286,9 +286,9 @@ STATIC mp_obj_t machine_hard_spi_make_new(mp_arg_val_t *args) {
     config.irq_priority = 6;
 #endif
 
-    config.mode = NRFX_SPI_MODE_0;
+    config.mode = NRF_SPI_MODE_0;
     config.orc  = 0xFF; // Overrun character
-    config.bit_order = (args[ARG_NEW_firstbit].u_int == 0) ? NRFX_SPI_BIT_ORDER_MSB_FIRST : NRFX_SPI_BIT_ORDER_LSB_FIRST;
+    config.bit_order = (args[ARG_NEW_firstbit].u_int == 0) ? NRF_SPI_BIT_ORDER_MSB_FIRST : NRF_SPI_BIT_ORDER_LSB_FIRST;
 
     // Set context to this instance of SPI
     nrfx_spi_init(&self->p_spi, &config, NULL, (void *)self);
