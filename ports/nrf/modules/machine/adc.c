@@ -153,19 +153,21 @@ STATIC mp_obj_t machine_adc_make_new(const mp_obj_type_t *type, size_t n_args, s
 mp_obj_t machine_adc_value(mp_obj_t self_in) {
     machine_adc_obj_t *self = self_in;
 
-    int16_t value;
-
 #if NRF51
+    nrf_adc_value_t value = 0;
+
     nrfx_adc_channel_t channel_config = {
-        .config.config.resolution         = NRF_ADC_CONFIG_RES_8BIT,
-        .config.config.input              = NRF_ADC_CONFIG_SCALING_INPUT_TWO_THIRDS,
-        .config.config.reference          = NRF_ADC_CONFIG_REF_VBG,
-        .config.config.ain                = self->ain,
-        .config.config.external_reference = ADC_CONFIG_EXTREFSEL_None << ADC_CONFIG_EXTREFSEL_Pos // Currently not defined in nrfx/hal.
+        .config.resolution = NRF_ADC_CONFIG_RES_8BIT,
+        .config.input      = NRF_ADC_CONFIG_SCALING_INPUT_TWO_THIRDS,
+        .config.reference  = NRF_ADC_CONFIG_REF_VBG,
+        .config.input      = self->ain,
+        .config.extref     = ADC_CONFIG_EXTREFSEL_None << ADC_CONFIG_EXTREFSEL_Pos // Currently not defined in nrfx/hal.
     };
 
     nrfx_adc_sample_convert(&channel_config, &value);
 #else // NRF52
+    nrf_saadc_value_t value = 0;
+
     nrfx_saadc_sample_convert(self->id, &value);
 #endif
 
@@ -215,19 +217,21 @@ static uint8_t battery_level_in_percent(const uint16_t mvolts)
 /// Get battery level in percentage.
 mp_obj_t machine_adc_battery_level(void) {
 
-    int16_t value = 0;
-
 #if NRF51
+    nrf_adc_value_t value = 0;
+
     nrfx_adc_channel_t channel_config = {
-        .config.config.resolution         = NRF_ADC_CONFIG_RES_8BIT,
-        .config.config.input              = NRF_ADC_CONFIG_SCALING_SUPPLY_ONE_THIRD,
-        .config.config.reference          = NRF_ADC_CONFIG_REF_VBG,
-        .config.config.ain                = NRF_ADC_CONFIG_INPUT_DISABLED,
-        .config.config.external_reference = ADC_CONFIG_EXTREFSEL_None << ADC_CONFIG_EXTREFSEL_Pos // Currently not defined in nrfx/hal.
+        .config.resolution = NRF_ADC_CONFIG_RES_8BIT,
+        .config.input      = NRF_ADC_CONFIG_SCALING_SUPPLY_ONE_THIRD,
+        .config.reference  = NRF_ADC_CONFIG_REF_VBG,
+        .config.input      = NRF_ADC_CONFIG_INPUT_DISABLED,
+        .config.extref     = ADC_CONFIG_EXTREFSEL_None << ADC_CONFIG_EXTREFSEL_Pos // Currently not defined in nrfx/hal.
     };
 
     nrfx_adc_sample_convert(&channel_config, &value);
 #else // NRF52
+    nrf_saadc_value_t value = 0;
+
     const nrf_saadc_channel_config_t config = {
         .resistor_p = NRF_SAADC_RESISTOR_DISABLED,
         .resistor_n = NRF_SAADC_RESISTOR_DISABLED,
