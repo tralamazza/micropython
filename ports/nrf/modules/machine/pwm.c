@@ -53,7 +53,7 @@ typedef struct {
     uint16_t       pulse_width;
     uint16_t       period;
     nrf_pwm_clk_t  freq;
-    pwm_mode_t mode;
+    pwm_mode_t     mode;
 } machine_pwm_config_t;
 
 typedef struct _machine_hard_pwm_obj_t {

@@ -49,7 +49,7 @@ typedef struct _machine_adc_obj_t {
 #endif
 } machine_adc_obj_t;
 
-STATIC machine_adc_obj_t machine_adc_obj[] = {
+STATIC const machine_adc_obj_t machine_adc_obj[] = {
 #if NRF51
     {{&machine_adc_type}, .id = 0, .ain = NRF_ADC_CONFIG_INPUT_0},
     {{&machine_adc_type}, .id = 1, .ain = NRF_ADC_CONFIG_INPUT_1},
@@ -117,17 +117,17 @@ STATIC void machine_adc_print(const mp_print_t *print, mp_obj_t o, mp_print_kind
 
 // for make_new
 STATIC mp_obj_t machine_adc_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_pin };
+    enum { ARG_id };
     static const mp_arg_t allowed_args[] = {
-        { ARG_pin,  MP_ARG_OBJ, {.u_obj = MP_OBJ_NEW_SMALL_INT(-1) } },
+        { MP_QSTR_id, MP_ARG_OBJ, {.u_obj = MP_OBJ_NEW_SMALL_INT(-1) } },
     };
 
     // parse args
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    int adc_id = adc_find(args[ARG_pin].u_obj);
-    machine_adc_obj_t *self = &machine_adc_obj[adc_id];
+    int adc_id = adc_find(args[ARG_id].u_obj);
+    const machine_adc_obj_t *self = &machine_adc_obj[adc_id];
 
 #if defined(NRF52_SERIES)
     const nrf_saadc_channel_config_t config = {
