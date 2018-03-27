@@ -26,8 +26,6 @@
  */
 #include "py/obj.h"
 
-#include "nrf_spi.h"
-
 extern const mp_obj_type_t machine_hard_spi_type;
 
 void spi_init0(void);
