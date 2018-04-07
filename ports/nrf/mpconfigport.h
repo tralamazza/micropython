@@ -214,6 +214,7 @@ extern const struct _mp_obj_module_t mp_module_uos;
 extern const struct _mp_obj_module_t mp_module_ubluepy;
 extern const struct _mp_obj_module_t music_module;
 extern const struct _mp_obj_module_t random_module;
+extern const struct _mp_obj_module_t neopixel_module;
 
 #if MICROPY_PY_UBLUEPY
 #define UBLUEPY_MODULE                      { MP_ROM_QSTR(MP_QSTR_ubluepy), MP_ROM_PTR(&mp_module_ubluepy) },
@@ -225,6 +226,12 @@ extern const struct _mp_obj_module_t random_module;
 #define MUSIC_MODULE                        { MP_ROM_QSTR(MP_QSTR_music), MP_ROM_PTR(&music_module) },
 #else
 #define MUSIC_MODULE
+#endif
+
+#if MICROPY_PY_NEOPIXEL
+#define NEOPIXEL_MODULE                        { MP_ROM_QSTR(MP_QSTR_neopixel), MP_ROM_PTR(&neopixel_module) },
+#else
+#define NEOPIXEL_MODULE
 #endif
 
 #if MICROPY_PY_HW_RNG
@@ -260,6 +267,7 @@ extern const struct _mp_obj_module_t ble_module;
     UBLUEPY_MODULE \
     RANDOM_MODULE \
     MICROPY_BOARD_BUILTINS \
+    NEOPIXEL_MODULE \
 
 
 #else
@@ -272,6 +280,7 @@ extern const struct _mp_obj_module_t ble_module;
     MUSIC_MODULE \
     RANDOM_MODULE \
     MICROPY_BOARD_BUILTINS \
+    NEOPIXEL_MODULE \
 
 
 #endif // BLUETOOTH_SD

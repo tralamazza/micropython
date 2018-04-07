@@ -224,6 +224,7 @@ DRIVERS_SRC_C += $(addprefix modules/,\
 	music/musictunes.c \
 	ble/modble.c \
 	random/modrandom.c \
+	neopixel/modneopixel.c \
 	)
 
 # Custom micropython startup file with smaller interrupt vector table
