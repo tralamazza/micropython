@@ -1,12 +1,13 @@
 
-/* Flash layout: softdevice     | application     | filesystem */
+/* Flash layout: softdevice     | application     | filesystem | bootloader */
 /* RAM layout:   softdevice RAM | application RAM */
 _sd_size       = DEFINED(_sd_size) ? _sd_size : 0;
 _sd_ram        = DEFINED(_sd_ram)  ? _sd_ram : 0;
 _fs_size       = DEFINED(_fs_size) ? _fs_size : 64K; /* TODO: set to 0 if not using the filesystem */
-_app_size      = _flash_size - _sd_size - _fs_size;
+_bootloader_size = DEFINED(_bootloader_size) ? _bootloader_size : 0;
+_app_size      = _flash_size - _sd_size - _fs_size - _bootloader_size;
 _app_start     = _sd_size;
-_fs_start      = _sd_size + _app_size;
+_fs_start      = _app_start + _app_size;
 _fs_end        = _fs_start + _fs_size;
 _app_ram_start = 0x20000000 + _sd_ram;
 _app_ram_size  = _ram_size - _sd_ram;

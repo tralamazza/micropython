@@ -55,6 +55,17 @@
 #include "rtcounter.h"
 #endif
 
+#if BLUETOOTH_SD
+#include "nrf_sdm.h"
+#include "ble_drv.h"
+#if NRF52
+#include "nrf_nvic.h"
+#endif
+#define BLUETOOTH_STACK_ENABLED() (ble_drv_stack_enabled())
+#else
+#define BLUETOOTH_STACK_ENABLED() (0)
+#endif // BLUETOOTH_SD
+
 #define PYB_RESET_HARD      (0)
 #define PYB_RESET_WDT       (1)
 #define PYB_RESET_SOFT      (2)
@@ -137,11 +148,33 @@ STATIC mp_obj_t machine_info(mp_uint_t n_args, const mp_obj_t *args) {
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_info_obj, 0, 1, machine_info);
 
 // Resets the pyboard in a manner similar to pushing the external RESET button.
-STATIC mp_obj_t machine_reset(void) {
-    NVIC_SystemReset();
+STATIC mp_obj_t machine_reset(mp_uint_t n_args, const mp_obj_t *args) {
+    // Bootmode is a value used in the bootloader (if present) to boot in
+    // a special mode. The value 0 is the default value (after reset from
+    // power off).
+    mp_int_t bootmode = 0;
+    if (n_args > 0) {
+        bootmode = mp_obj_get_int(args[0]);
+    }
+    #if BLUETOOTH_SD
+    if (BLUETOOTH_STACK_ENABLED()) {
+        #if NRF51
+        sd_power_gpregret_clr(0xff); // clear all bits - there are only 8 bits
+        sd_power_gpregret_set(bootmode);
+        #else
+        sd_power_gpregret_clr(0, 0xff); // clear all bits - there are only 8 bits
+        sd_power_gpregret_set(0, bootmode);
+        #endif
+        sd_nvic_SystemReset();
+    } else
+    #endif
+    {
+        NRF_POWER->GPREGRET = bootmode;
+        NVIC_SystemReset();
+    }
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_0(machine_reset_obj, machine_reset);
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_reset_obj, 0, 1, machine_reset);
 
 STATIC mp_obj_t machine_soft_reset(void) {
     pyexec_system_exit = PYEXEC_FORCED_EXIT;
