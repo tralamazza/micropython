@@ -98,8 +98,11 @@
 
 typedef struct _machine_hard_spi_obj_t {
     mp_obj_base_t       base;
-    const nrfx_spi_t   * p_spi;    // Driver instance
-    nrfx_spi_config_t  * p_config; // pointer to volatile part
+    const nrfx_spi_t  * p_spi;    // Driver instance
+    nrfx_spi_config_t * p_config; // pointer to volatile part
+#if NRFX_SPIM_ENABLED
+    uint32_t            max_dma_xfer_size;
+#endif // NRFX_SPIM_ENABLED
 } machine_hard_spi_obj_t;
 
 STATIC const nrfx_spi_t machine_spi_instances[] = {
@@ -116,12 +119,38 @@ STATIC const nrfx_spi_t machine_spi_instances[] = {
 STATIC nrfx_spi_config_t configs[MP_ARRAY_SIZE(machine_spi_instances)];
 
 STATIC const machine_hard_spi_obj_t machine_hard_spi_obj[] = {
-    {{&machine_hard_spi_type}, .p_spi = &machine_spi_instances[0], .p_config = &configs[0]},
-    {{&machine_hard_spi_type}, .p_spi = &machine_spi_instances[1], .p_config = &configs[1]},
+    {
+        {&machine_hard_spi_type},
+        .p_spi = &machine_spi_instances[0],
+        .p_config = &configs[0],
+#if NRFX_SPIM_ENABLED
+        .max_dma_xfer_size = (1 << NRFX_CONCAT_2(SPIM0, _EASYDMA_MAXCNT_SIZE))
+#endif // NRFX_SPIM_ENABLED
+    },
+    {
+        {&machine_hard_spi_type},
+        .p_spi = &machine_spi_instances[1],
+        .p_config = &configs[1],
+#if NRFX_SPIM_ENABLED
+        .max_dma_xfer_size = (1 << NRFX_CONCAT_2(SPIM1, _EASYDMA_MAXCNT_SIZE))
+#endif // NRFX_SPIM_ENABLED
+    },
 #if defined(NRF52_SERIES)
-    {{&machine_hard_spi_type}, .p_spi = &machine_spi_instances[2], .p_config = &configs[2]},
+    {
+        {&machine_hard_spi_type},
+        .p_spi = &machine_spi_instances[2],
+        .p_config = &configs[2],
+#if NRFX_SPIM_ENABLED
+        .max_dma_xfer_size = (1 << NRFX_CONCAT_2(SPIM2, _EASYDMA_MAXCNT_SIZE))
+#endif
+    },
 #if defined(NRF52840_XXAA) && NRFX_SPIM_ENABLED
-    {{&machine_hard_spi_type}, .p_spi = &machine_spi_instances[3], .p_config = &configs[3]},
+    {
+        {&machine_hard_spi_type},
+        .p_spi = &machine_spi_instances[3],
+        .p_config = &configs[3],
+        .max_dma_xfer_size = (1 << NRFX_CONCAT_2(SPIM3, _EASYDMA_MAXCNT_SIZE))
+    },
 #endif // NRF52840_XXAA && NRFX_SPIM_ENABLED
 #endif // NRF52_SERIES
 };
@@ -153,14 +182,32 @@ STATIC int spi_find(mp_obj_t id) {
 }
 
 void spi_transfer(const machine_hard_spi_obj_t * self, size_t len, const void * src, void * dest) {
+#if NRFX_SPIM_ENABLED
+    size_t offset = 0;
+    while (offset < len) {
+        size_t curr_len = len - offset;
+        if (curr_len > self->max_dma_xfer_size) {
+            curr_len = self->max_dma_xfer_size - 1;
+        }
+        nrfx_spi_xfer_desc_t xfer_desc = {
+            .p_tx_buffer = (src != NULL) ? &((uint8_t *)src)[offset] : NULL,
+            .tx_length   = (src != NULL) ? curr_len : 0,
+            .p_rx_buffer = (dest != NULL) ? &((uint8_t *)dest)[offset] : NULL,
+            .rx_length   = (dest != NULL) ? curr_len : 0,
+        };
+        offset += curr_len;
+        nrfx_spi_xfer(self->p_spi, &xfer_desc, NRFX_SPIM_FLAG_NO_XFER_EVT_HANDLER);
+    }
+#else
     nrfx_spi_xfer_desc_t xfer_desc = {
         .p_tx_buffer = src,
-	.tx_length   = len,
-	.p_rx_buffer = dest,
-	.rx_length   = len
+        .tx_length   = len,
+        .p_rx_buffer = dest,
+        .rx_length   = len
     };
 
     nrfx_spi_xfer(self->p_spi, &xfer_desc, 0);
+#endif // NRFX_SPIM_ENABLED
 }
 
 /******************************************************************************/
