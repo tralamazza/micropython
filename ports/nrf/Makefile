@@ -41,6 +41,11 @@ QSTR_DEFS = qstrdefsport.h $(BUILD)/pins_qstr.h
 # include py core make definitions
 include ../../py/py.mk
 
+ifeq ($(MCU_VARIANT),nrf51)
+PAGESIZE = 1024
+else
+PAGESIZE = 4096
+endif
 
 FATFS_DIR = lib/oofatfs
 MPY_CROSS = ../../mpy-cross/mpy-cross
@@ -251,47 +256,45 @@ $(filter $(PY_BUILD)/../extmod/vfs_fat_%.o, $(PY_O)): COPT += -Os
 
 all: binary hex
 
-OUTPUT_FILENAME = firmware
-
 ## Create binary .bin file from the .out file
-binary: $(BUILD)/$(OUTPUT_FILENAME).bin
+binary: $(BUILD)/firmware.bin
 
-$(BUILD)/$(OUTPUT_FILENAME).bin: $(BUILD)/$(OUTPUT_FILENAME).elf
-	$(OBJCOPY) -O binary $< $@
+$(BUILD)/firmware.bin: $(BUILD)/firmware.hex
+	$(OBJCOPY) -O binary -I ihex $< $@
 
 ## Create binary .hex file from the .out file
-hex: $(BUILD)/$(OUTPUT_FILENAME).hex
+hex: $(BUILD)/firmware.hex
 
-$(BUILD)/$(OUTPUT_FILENAME).hex: $(BUILD)/$(OUTPUT_FILENAME).elf
+## Join all hex files together to produce one flashable file
+$(BUILD)/firmware.hex: $(SOFTDEV_HEX) $(BUILD)/application.hex
+	$(PYTHON) mergehex.py --pagesize $(PAGESIZE) $@ $^
+
+$(BUILD)/application.hex: $(BUILD)/application.elf
 	$(OBJCOPY) -O ihex $< $@
 
 FLASHER ?=
 
 ifeq ($(FLASHER),)
 
-flash: $(BUILD)/$(OUTPUT_FILENAME).hex
-	nrfjprog --program $< --sectorerase -f $(MCU_VARIANT)
-	nrfjprog --reset -f $(MCU_VARIANT)
+flash: $(BUILD)/application.hex
+	nrfjprog --program $< --sectorerase -f $(MCU_VARIANT) --reset
 
-sd: $(BUILD)/$(OUTPUT_FILENAME).hex
+sd: $(BUILD)/firmware.hex
 	nrfjprog --eraseall -f $(MCU_VARIANT)
-	nrfjprog --program $(SOFTDEV_HEX) -f $(MCU_VARIANT)
-	nrfjprog --program $< --sectorerase -f $(MCU_VARIANT)
-	nrfjprog --reset -f $(MCU_VARIANT)
+	nrfjprog --program $< -f $(MCU_VARIANT) --reset
 
 else ifeq ($(FLASHER), pyocd)
 
-flash: $(BUILD)/$(OUTPUT_FILENAME).hex
+flash: $(BUILD)/application.hex
 	pyocd-flashtool -t $(MCU_VARIANT) $<
 
-sd: $(BUILD)/$(OUTPUT_FILENAME).hex
+sd: $(BUILD)/firmware.hex
 	pyocd-flashtool -t $(MCU_VARIANT) --chip_erase
-	pyocd-flashtool -t $(MCU_VARIANT) $(SOFTDEV_HEX)
 	pyocd-flashtool -t $(MCU_VARIANT) $<
 
 endif
 
-$(BUILD)/$(OUTPUT_FILENAME).elf: $(OBJ)
+$(BUILD)/application.elf: $(OBJ)
 	$(ECHO) "LINK $@"
 	$(Q)$(CC) $(LDFLAGS) -o $@ $(OBJ) $(LIBS)
 	$(Q)$(SIZE) $@
