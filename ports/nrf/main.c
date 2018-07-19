@@ -40,7 +40,6 @@
 #include "py/compile.h"
 #include "lib/utils/pyexec.h"
 #include "readline.h"
-#include "gccollect.h"
 #include "modmachine.h"
 #include "modmusic.h"
 #include "modules/uos/microbitfs.h"
@@ -92,6 +91,7 @@ void do_str(const char *src, mp_parse_input_kind_t input_kind) {
 
 extern uint32_t _heap_start;
 extern uint32_t _heap_end;
+extern uint32_t _ram_end;
 
 int main(int argc, char **argv) {
     

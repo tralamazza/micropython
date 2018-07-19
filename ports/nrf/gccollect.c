@@ -31,6 +31,8 @@
 #include "py/gc.h"
 #include "gccollect.h"
 
+extern uint32_t _ram_end;
+
 static inline uintptr_t get_sp(void) {
     uintptr_t result;
     __asm__ ("mov %0, sp\n" : "=r" (result) );
